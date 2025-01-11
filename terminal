@@ -1,0 +1,8 @@
+mkdir -p src/apps/{student-app,parent-app,teacher-app,admin-app}
+mkdir -p src/shared/{components,utils,styles} 
+npm install --save-dev @testing-library/react @testing-library/jest-dom @testing-library/user-event vitest jsdom 
+npm install @ant-design/icons @ant-design/charts antd react-router-dom axios dayjs @tailwindcss/forms 
+npm install -D tailwindcss postcss autoprefixer @tailwindcss/forms
+npx tailwindcss init -p 
+rm -rf node_modules package-lock.json 
+npm install 
