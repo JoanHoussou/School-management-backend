@@ -156,18 +156,7 @@ const initialSchoolStats = {
       subject: "Question sur l'emploi du temps",
       time: "Il y a 10 min",
       priority: "high"
-    },
-    // ... autres messages
-  ],
-  upcomingEvents: [
-    {
-      id: 1,
-      title: "Conseil de classe 3ème A",
-      date: "2024-03-20",
-      time: "14:00",
-      location: "Salle 102"
-    },
-    // ... autres événements
+    }
   ],
   classDetails: {
     '6eme': {
@@ -442,10 +431,10 @@ const AdminDashboard = () => {
                                 <Progress percent={classe.performance} size="small" />
                               </Tooltip>
                               <Tooltip title="Assiduité">
-                                <Progress 
-                                  percent={classe.attendance} 
-                                  size="small" 
-                                  strokeColor="#1890ff" 
+                                <Progress
+                                  percent={classe.attendance}
+                                  size="small"
+                                  strokeColor="#1890ff"
                                 />
                               </Tooltip>
                             </div>

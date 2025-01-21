@@ -1,36 +1,52 @@
-import { Card, Table, Button, Modal, Form, Input, Select, Space, Row, Col, Statistic } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, Select, Space, Row, Col, Statistic, message, Spin } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AppLayout from '../../../shared/components/Layout';
 import { menuItems } from './AdminDashboard';
+import classService from '../../../shared/services/classService';
+import userService from '../../../shared/services/userService';
 
 const { Option } = Select;
 
 const ClassManager = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
+  const [classes, setClasses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [teachers, setTeachers] = useState([]);
   const [form] = Form.useForm();
 
-  const classesData = [
-    {
-      key: '1',
-      name: '3ème A',
-      mainTeacher: 'Prof. Martin',
-      students: 25,
-      level: '3ème',
-      year: '2023-2024',
-      room: 'Salle 101'
-    },
-    {
-      key: '2',
-      name: '3ème B',
-      mainTeacher: 'Prof. Dubois',
-      students: 28,
-      level: '3ème',
-      year: '2023-2024',
-      room: 'Salle 102'
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        const teachersData = await userService.getAllTeachers();
+        setTeachers(teachersData);
+      } catch (error) {
+        console.error('Erreur lors de la récupération des professeurs:', error);
+        message.error('Erreur lors de la récupération des professeurs');
+      }
+    };
+    
+    fetchTeachers();
+  }, []);
+
+  useEffect(() => {
+    fetchClasses();
+  }, []);
+
+  const fetchClasses = async () => {
+    try {
+      setLoading(true);
+      const data = await classService.getAllClasses();
+      console.log('Classes récupérées:', data);
+      setClasses(data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des classes:', error);
+      message.error('Erreur lors du chargement des classes');
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const columns = [
     {
@@ -43,29 +59,26 @@ const ClassManager = () => {
       title: 'Professeur principal',
       dataIndex: 'mainTeacher',
       key: 'mainTeacher',
+      render: (teacher) => teacher?.name || 'Non assigné',
     },
     {
       title: 'Nombre d\'élèves',
       dataIndex: 'students',
       key: 'students',
-      sorter: (a, b) => a.students - b.students,
+      render: (students) => students?.length || 0,
+      sorter: (a, b) => (a.students?.length || 0) - (b.students?.length || 0),
     },
     {
       title: 'Niveau',
       dataIndex: 'level',
       key: 'level',
       filters: [
-        { text: '6ème', value: '6ème' },
-        { text: '5ème', value: '5ème' },
-        { text: '4ème', value: '4ème' },
-        { text: '3ème', value: '3ème' },
+        { text: '6ème', value: '6eme' },
+        { text: '5ème', value: '5eme' },
+        { text: '4ème', value: '4eme' },
+        { text: '3ème', value: '3eme' },
       ],
       onFilter: (value, record) => record.level === value,
-    },
-    {
-      title: 'Salle principale',
-      dataIndex: 'room',
-      key: 'room',
     },
     {
       title: 'Actions',
@@ -85,7 +98,7 @@ const ClassManager = () => {
           <Button 
             icon={<DeleteOutlined />} 
             danger
-            onClick={() => handleDelete(record.key)}
+            onClick={() => handleDelete(record)}
           />
         </Space>
       ),
@@ -98,23 +111,113 @@ const ClassManager = () => {
   };
 
   const handleEdit = (record) => {
-    form.setFieldsValue(record);
+    console.log('Édition de la classe:', record);
+    form.setFieldsValue({
+      name: record.name,
+      level: record.level,
+      mainTeacher: record.mainTeacher?._id,
+      capacity: record.capacity,
+      year: record.academicYear,
+      _id: record._id
+    });
     setIsModalVisible(true);
   };
 
-  const handleDelete = (key) => {
-    // Logique de suppression
+  const handleDelete = async (record) => {
+    try {
+      await classService.deleteClass(record._id);
+      message.success('Classe supprimée avec succès');
+      fetchClasses();
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      message.error('Erreur lors de la suppression de la classe');
+    }
   };
 
-  const handleViewDetails = (record) => {
-    setSelectedClass(record);
+  const handleViewDetails = async (record) => {
+    try {
+      const classDetails = await classService.getClassById(record._id);
+      setSelectedClass(classDetails);
+    } catch (error) {
+      console.error('Erreur lors du chargement des détails:', error);
+      message.error('Erreur lors du chargement des détails de la classe');
+    }
   };
 
-  const handleModalOk = () => {
-    form.validateFields().then(values => {
-      // Logique d'ajout/modification
+  const handleModalOk = async () => {
+    try {
+      // Validation des champs du formulaire
+      const values = await form.validateFields();
+      console.log('Valeurs du formulaire brutes:', values);
+
+      // Normalisation des données
+      const normalizedData = {
+        name: values.name.trim(),
+        level: values.level,
+        mainTeacher: values.mainTeacher,
+        capacity: parseInt(values.capacity, 10),
+        academicYear: values.year || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)
+      };
+
+      // Validation des données normalisées
+      if (isNaN(normalizedData.capacity) || normalizedData.capacity <= 0) {
+        throw new Error('La capacité doit être un nombre positif');
+      }
+
+      if (!normalizedData.name || normalizedData.name.length < 2) {
+        throw new Error('Le nom de la classe doit contenir au moins 2 caractères');
+      }
+
+      if (!normalizedData.level || !['6eme', '5eme', '4eme', '3eme'].includes(normalizedData.level)) {
+        throw new Error('Le niveau de la classe est invalide');
+      }
+
+      console.log('Données normalisées à envoyer au serveur:', normalizedData);
+
+      // Envoi des données au serveur
+      let response;
+      if (values._id) {
+        // Mise à jour d'une classe existante
+        response = await classService.updateClass(values._id, normalizedData);
+        console.log('Réponse de mise à jour:', response);
+        message.success('Classe mise à jour avec succès');
+      } else {
+        // Création d'une nouvelle classe
+        response = await classService.createClass(normalizedData);
+        console.log('Réponse de création:', response);
+        message.success('Classe créée avec succès');
+      }
+
+      // Fermeture du modal et rafraîchissement des données
       setIsModalVisible(false);
-    });
+      await fetchClasses();
+      
+      // Réinitialisation du formulaire
+      form.resetFields();
+    } catch (error) {
+      console.error('Erreur complète:', error);
+      
+      // Gestion des erreurs spécifiques
+      if (error.isFieldError) {
+        return; // Erreur de validation du formulaire
+      }
+      
+      // Affichage des messages d'erreur appropriés
+      const errorMessage = error.response?.data?.message ||
+                         error.message ||
+                         'Une erreur est survenue lors de la sauvegarde de la classe';
+      
+      message.error(errorMessage);
+      
+      // Journalisation des erreurs serveur
+      if (error.response) {
+        console.error('Erreur serveur:', {
+          status: error.response.status,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+      }
+    }
   };
 
   const renderClassStats = () => {
@@ -126,28 +229,27 @@ const ClassManager = () => {
           <Col span={6}>
             <Statistic 
               title="Nombre d'élèves"
-              value={selectedClass.students}
+              value={selectedClass.students?.length || 0}
+              suffix={`/${selectedClass.capacity || 30}`}
               prefix={<UserOutlined />}
             />
           </Col>
           <Col span={6}>
             <Statistic 
-              title="Moyenne générale"
-              value={14.5}
-              suffix="/20"
+              title="Professeurs"
+              value={selectedClass.teachers?.length || 0}
             />
           </Col>
           <Col span={6}>
             <Statistic 
-              title="Taux d'assiduité"
-              value={95}
-              suffix="%"
+              title="Niveau"
+              value={selectedClass.level}
             />
           </Col>
           <Col span={6}>
             <Statistic 
-              title="Nombre de matières"
-              value={8}
+              title="Professeur principal"
+              value={selectedClass.mainTeacher?.name || 'Non assigné'}
             />
           </Col>
         </Row>
@@ -172,17 +274,17 @@ const ClassManager = () => {
         {renderClassStats()}
 
         <Card>
-          <Table 
-            columns={columns} 
-            dataSource={classesData}
-            onRow={(record) => ({
-              onClick: () => handleViewDetails(record),
-            })}
-          />
+          <Spin spinning={loading}>
+            <Table 
+              columns={columns} 
+              dataSource={classes}
+              rowKey="_id"
+            />
+          </Spin>
         </Card>
 
         <Modal
-          title={`${form.getFieldValue('key') ? 'Modifier' : 'Ajouter'} une classe`}
+          title={`${form.getFieldValue('_id') ? 'Modifier' : 'Ajouter'} une classe`}
           open={isModalVisible}
           onOk={handleModalOk}
           onCancel={() => setIsModalVisible(false)}
@@ -193,9 +295,16 @@ const ClassManager = () => {
             layout="vertical"
           >
             <Form.Item
+              name="_id"
+              hidden
+            >
+              <Input />
+            </Form.Item>
+
+            <Form.Item
               name="name"
               label="Nom de la classe"
-              rules={[{ required: true }]}
+              rules={[{ required: true, message: 'Le nom est requis' }]}
             >
               <Input />
             </Form.Item>
@@ -203,40 +312,56 @@ const ClassManager = () => {
             <Form.Item
               name="level"
               label="Niveau"
-              rules={[{ required: true }]}
+              rules={[{ required: true, message: 'Le niveau est requis' }]}
             >
               <Select>
-                <Option value="6ème">6ème</Option>
-                <Option value="5ème">5ème</Option>
-                <Option value="4ème">4ème</Option>
-                <Option value="3ème">3ème</Option>
+                <Option value="6eme">6ème</Option>
+                <Option value="5eme">5ème</Option>
+                <Option value="4eme">4ème</Option>
+                <Option value="3eme">3ème</Option>
               </Select>
             </Form.Item>
 
             <Form.Item
               name="mainTeacher"
               label="Professeur principal"
-              rules={[{ required: true }]}
+              rules={[{ required: true, message: 'Le professeur principal est requis' }]}
             >
-              <Select>
-                <Option value="Prof. Martin">Prof. Martin</Option>
-                <Option value="Prof. Dubois">Prof. Dubois</Option>
-                <Option value="Prof. Bernard">Prof. Bernard</Option>
+              <Select
+                placeholder="Sélectionnez un professeur principal"
+                loading={loading}
+                showSearch
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+              >
+                {teachers.map(teacher => (
+                  <Option key={teacher._id} value={teacher._id}>
+                    {teacher.name}
+                  </Option>
+                ))}
               </Select>
             </Form.Item>
 
             <Form.Item
-              name="room"
-              label="Salle principale"
-              rules={[{ required: true }]}
+              name="capacity"
+              label="Capacité"
+              initialValue={30}
+              rules={[
+                { required: true, message: 'La capacité est requise' },
+                { type: 'number', min: 1, max: 40, message: 'La capacité doit être entre 1 et 40' },
+                { transform: (value) => Number(value) }
+              ]}
             >
-              <Input />
+              <Input type="number" />
             </Form.Item>
 
             <Form.Item
               name="year"
               label="Année scolaire"
-              rules={[{ required: true }]}
+              rules={[{ required: true, message: 'L\'année scolaire est requise' }]}
+              initialValue="2023-2024"
             >
               <Select>
                 <Option value="2023-2024">2023-2024</Option>
@@ -250,4 +375,4 @@ const ClassManager = () => {
   );
 };
 
-export default ClassManager; 
+export default ClassManager;

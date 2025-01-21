@@ -26,6 +26,20 @@ const users = [
     name: 'Prof. Martin'
   },
   {
+    username: 'teacher-2',
+    password: 'password',
+    email: 'teacher2@ecole.fr',
+    role: 'teacher',
+    name: 'Prof. Dubois'
+  },
+  {
+    username: 'teacher-3',
+    password: 'password',
+    email: 'teacher3@ecole.fr',
+    role: 'teacher',
+    name: 'Prof. Bernard'
+  },
+  {
     username: 'admin-1',
     password: 'password',
     email: 'admin1@ecole.fr',

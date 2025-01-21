@@ -4,6 +4,8 @@ const cors = require('cors');
 const passport = require('passport');
 const connectDB = require('./config/database');
 const authRoutes = require('./routes/auth');
+const classRoutes = require('./routes/classes');
+const userRoutes = require('./routes/users');
 
 // Initialisation de l'application Express
 const app = express();
@@ -30,6 +32,8 @@ app.use(passport.initialize());
 
 // Configuration des routes
 app.use('/api/auth', authRoutes);
+app.use('/api/classes', classRoutes);
+app.use('/api/users', userRoutes);
 
 // Route de test
 app.get('/', (req, res) => {

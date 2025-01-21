@@ -1,15 +1,15 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
+import { Suspense } from 'react';
 import { Spin } from 'antd';
 import PrivateRoute from './shared/components/PrivateRoute';
 import Login from './shared/components/Login';
 import Unauthorized from './shared/components/Unauthorized';
 
-// Lazy loading des applications
-const StudentApp = lazy(() => import('./apps/student-app/StudentApp'));
-const ParentApp = lazy(() => import('./apps/parent-app/ParentApp'));
-const TeacherApp = lazy(() => import('./apps/teacher-app/TeacherApp'));
-const AdminApp = lazy(() => import('./apps/admin-app/AdminApp'));
+// Import standard des applications
+import StudentApp from './apps/student-app/StudentApp';
+import ParentApp from './apps/parent-app/ParentApp';
+import TeacherApp from './apps/teacher-app/TeacherApp';
+import AdminApp from './apps/admin-app/AdminApp';
 
 // Composant de chargement
 const LoadingFallback = () => (
