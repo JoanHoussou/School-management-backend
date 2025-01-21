@@ -223,6 +223,11 @@ const ClassManager = () => {
       const values = await classForm.validateFields();
       console.log('Valeurs du formulaire brutes:', values);
 
+      // Vérification des étudiants si nécessaire
+      if (values.student === undefined && isStudentModalVisible) {
+        throw new Error('Veuillez sélectionner un étudiant');
+      }
+
       // Normalisation des données
       const normalizedData = {
         name: values.name.trim(),
