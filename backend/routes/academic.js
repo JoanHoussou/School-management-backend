@@ -96,6 +96,30 @@ router.post('/curriculum', authenticateJWT, (req, res) => {
 });
 
 // Modifier le programme
+// Supprimer une matière
+router.delete('/subjects/:id', authenticateJWT, (req, res) => {
+  Subject.findByIdAndDelete(req.params.id)
+    .then(deletedSubject => {
+      if (!deletedSubject) {
+        return res.status(404).json({ message: 'Matière non trouvée' });
+      }
+      res.json({ message: 'Matière supprimée avec succès' });
+    })
+    .catch(error => handleError(res, error));
+});
+
+// Supprimer un programme
+router.delete('/curriculum/:id', authenticateJWT, (req, res) => {
+  Curriculum.findByIdAndDelete(req.params.id)
+    .then(deletedCurriculum => {
+      if (!deletedCurriculum) {
+        return res.status(404).json({ message: 'Programme non trouvé' });
+      }
+      res.json({ message: 'Programme supprimé avec succès' });
+    })
+    .catch(error => handleError(res, error));
+});
+
 router.put('/curriculum/:id', authenticateJWT, (req, res) => {
   Curriculum.findByIdAndUpdate(
     req.params.id,

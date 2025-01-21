@@ -87,7 +87,15 @@ const AcademicManager = () => {
 
   const handleDelete = async (record) => {
     try {
-      message.info(`Suppression de ${record.name} à implémenter`);
+      if (activeTab === 'subjects') {
+        await academicService.deleteSubject(record._id);
+        message.success('Matière supprimée avec succès');
+        fetchSubjects();
+      } else {
+        await academicService.deleteCurriculum(record._id);
+        message.success('Programme supprimé avec succès');
+        fetchCurriculum();
+      }
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       message.error('Erreur lors de la suppression');
@@ -205,6 +213,14 @@ const AcademicManager = () => {
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
           />
+          <Popconfirm
+            title="Êtes-vous sûr de vouloir supprimer ce programme ?"
+            onConfirm={() => handleDelete(record)}
+            okText="Oui"
+            cancelText="Non"
+          >
+            <Button icon={<DeleteOutlined />} danger />
+          </Popconfirm>
         </Space>
       ),
     },
@@ -238,7 +254,7 @@ const AcademicManager = () => {
       <Form.Item
         name="hoursPerWeek"
         label="Heures par semaine"
-        rules={[{ required: true, message: 'Le nombre d\'heures est requis' }]}
+        rules={[{ required: true, message: "Le nombre d'heures est requis" }]}
       >
         <InputNumber min={1} max={20} />
       </Form.Item>
@@ -263,6 +279,113 @@ const AcademicManager = () => {
           {teachers.map(teacher => (
             <Option key={teacher._id} value={teacher._id}>{teacher.name}</Option>
           ))}
+        </Select>
+      </Form.Item>
+    </Form>
+  );
+
+  const renderCurriculumForm = () => (
+    <Form form={form} layout="vertical">
+      <Form.Item
+        name="subject"
+        label="Matière"
+        rules={[{ required: true, message: 'La matière est requise' }]}
+      >
+        <Select>
+          {subjects.map(subject => (
+            <Option key={subject._id} value={subject._id}>{subject.name}</Option>
+          ))}
+        </Select>
+      </Form.Item>
+
+      <Form.Item
+        name="level"
+        label="Niveau"
+        rules={[{ required: true, message: 'Le niveau est requis' }]}
+      >
+        <Select>
+          {['CP', 'CE1', 'CE2', 'CM1', 'CM2', '6eme', '5eme', '4eme', '3eme'].map(level => (
+            <Option key={level} value={level}>{level}</Option>
+          ))}
+        </Select>
+      </Form.Item>
+
+      <Form.Item
+        name="academicYear"
+        label="Année académique"
+        rules={[{ required: true, message: "L'année académique est requise" }]}
+      >
+        <Input placeholder="2024-2025" />
+      </Form.Item>
+
+      <Form.List name="objectives">
+        {(fields, { add, remove }) => (
+          <>
+            {fields.map(({ key, name, ...restField }) => (
+              <div key={key} className="border p-4 mb-4 rounded">
+                <Form.Item
+                  {...restField}
+                  name={[name, 'title']}
+                  label="Titre de l'objectif"
+                  rules={[{ required: true, message: 'Le titre est requis' }]}
+                >
+                  <Input placeholder="Ex: Maîtrise de la grammaire de base" />
+                </Form.Item>
+
+                <Form.Item
+                  {...restField}
+                  name={[name, 'description']}
+                  label="Description"
+                >
+                  <TextArea rows={2} placeholder="Description détaillée de l'objectif" />
+                </Form.Item>
+
+                <Form.List name={[name, 'expectedCompetencies']}>
+                  {(subFields, { add: addCompetency, remove: removeCompetency }) => (
+                    <>
+                      {subFields.map((subField, index) => (
+                        <div key={subField.key} className="flex items-center gap-2 mb-2">
+                          <Form.Item
+                            {...restField}
+                            name={[subField.name]}
+                            label={index === 0 ? "Compétences attendues" : ""}
+                            className="flex-1 mb-0"
+                          >
+                            <Input placeholder="Ex: Conjuguer les verbes au présent" />
+                          </Form.Item>
+                          <Button onClick={() => removeCompetency(subField.name)} danger>
+                            Supprimer
+                          </Button>
+                        </div>
+                      ))}
+                      <Button type="dashed" onClick={() => addCompetency()} block>
+                        + Ajouter une compétence
+                      </Button>
+                    </>
+                  )}
+                </Form.List>
+
+                <Button danger onClick={() => remove(name)} className="mt-2">
+                  Supprimer cet objectif
+                </Button>
+              </div>
+            ))}
+            <Button type="dashed" onClick={() => add()} block className="mt-4 mb-4">
+              + Ajouter un objectif
+            </Button>
+          </>
+        )}
+      </Form.List>
+
+      <Form.Item
+        name="status"
+        label="Status"
+        rules={[{ required: true, message: 'Le status est requis' }]}
+      >
+        <Select>
+          <Option value="draft">Brouillon</Option>
+          <Option value="published">Publié</Option>
+          <Option value="archived">Archivé</Option>
         </Select>
       </Form.Item>
     </Form>
@@ -312,7 +435,7 @@ const AcademicManager = () => {
           onCancel={() => setIsModalVisible(false)}
           width={800}
         >
-          {activeTab === 'subjects' ? renderSubjectForm() : null}
+          {activeTab === 'subjects' ? renderSubjectForm() : renderCurriculumForm()}
         </Modal>
       </div>
     </AppLayout>

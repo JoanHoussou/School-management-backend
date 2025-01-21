@@ -58,11 +58,31 @@ const updateCurriculum = async (id, curriculumData) => {
   }
 };
 
+const deleteSubject = async (id) => {
+  try {
+    const response = await axios.delete(`${API_URL}/subjects/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};
+
+const deleteCurriculum = async (id) => {
+  try {
+    const response = await axios.delete(`${API_URL}/curriculum/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error.message;
+  }
+};
+
 export default {
   getAllSubjects,
   createSubject,
   updateSubject,
+  deleteSubject,
   getCurriculum,
   createCurriculum,
-  updateCurriculum
+  updateCurriculum,
+  deleteCurriculum
 };
