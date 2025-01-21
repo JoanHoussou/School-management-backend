@@ -33,8 +33,28 @@ const classSchema = new mongoose.Schema({
     }
   }],
   students: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Student'
+    student: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Student'
+    },
+    enrollmentDate: {
+      type: Date,
+      default: Date.now
+    },
+    status: {
+      type: String,
+      enum: ['active', 'transferred', 'inactive'],
+      default: 'active'
+    },
+    attendance: {
+      present: { type: Number, default: 0 },
+      absent: { type: Number, default: 0 },
+      late: { type: Number, default: 0 }
+    },
+    academicPerformance: {
+      averageGrade: { type: Number, default: 0 },
+      lastUpdated: Date
+    }
   }],
   capacity: {
     type: Number,
@@ -90,30 +110,72 @@ classSchema.methods.isFull = function() {
   return this.students.length >= this.capacity;
 };
 
-// Méthode pour ajouter un étudiant
-classSchema.methods.addStudent = function(studentId) {
-  if (!this.isFull() && !this.students.includes(studentId)) {
-    this.students.push(studentId);
-    return true;
+// Méthode pour ajouter un étudiant avec des données enrichies
+classSchema.methods.addStudent = async function(studentId) {
+  try {
+    // Vérifier si l'étudiant existe déjà
+    const existingStudent = this.students.find(s => s.student?.equals(studentId));
+    if (existingStudent) {
+      if (existingStudent.status === 'inactive') {
+        existingStudent.status = 'active';
+        existingStudent.enrollmentDate = new Date();
+        await this.save();
+        return { success: true, message: 'Étudiant réactivé', student: existingStudent };
+      }
+      return { success: false, message: 'Étudiant déjà inscrit' };
+    }
+
+    // Vérifier la capacité
+    if (this.students.filter(s => s.status === 'active').length >= this.capacity) {
+      return { success: false, message: 'Capacité maximale atteinte' };
+    }
+
+    // Ajouter l'étudiant avec les données enrichies
+    const studentEntry = {
+      student: studentId,
+      enrollmentDate: new Date(),
+      status: 'active',
+      attendance: {
+        present: 0,
+        absent: 0,
+        late: 0
+      },
+      academicPerformance: {
+        averageGrade: 0,
+        lastUpdated: new Date()
+      }
+    };
+
+    this.students.push(studentEntry);
+    await this.save();
+
+    // Mettre à jour les références de l'étudiant
+    await Student.findByIdAndUpdate(studentId, {
+      $push: {
+        classes: {
+          class: this._id,
+          enrollmentDate: studentEntry.enrollmentDate,
+          status: 'active'
+        }
+      }
+    });
+
+    return { success: true, message: 'Étudiant inscrit avec succès', student: studentEntry };
+  } catch (error) {
+    console.error('Erreur lors de l\'ajout de l\'étudiant:', error);
+    return { success: false, message: error.message };
   }
-  return false;
 };
 
-// Méthode pour retirer un étudiant
-classSchema.methods.removeStudent = async function(studentId) {
-  const index = this.students.indexOf(studentId);
-  if (index > -1) {
-    this.students.splice(index, 1);
-    
-    // Met à jour les classes de l'étudiant
-    await Student.findByIdAndUpdate(
-      studentId,
-      { $pull: { classes: this._id } }
-    );
-    
-    return true;
+// Méthode pour mettre à jour le statut d'un étudiant
+classSchema.methods.updateStudentStatus = async function(studentId, newStatus) {
+  const student = this.students.find(s => s.student?.equals(studentId));
+  if (student) {
+    student.status = newStatus;
+    await this.save();
+    return { success: true, message: `Statut mis à jour: ${newStatus}` };
   }
-  return false;
+  return { success: false, message: 'Étudiant non trouvé' };
 };
 
 // Méthode pour ajouter un professeur

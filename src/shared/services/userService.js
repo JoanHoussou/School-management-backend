@@ -17,7 +17,15 @@ const userService = {
   // Récupérer tous les étudiants
   getAllStudents: async () => {
     try {
-      const response = await axios.get(`${API_URL}/users/students`);
+      const response = await axios.get(`${API_URL}/users/students`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.data) {
+        // Log pour débogage
+        console.log('Étudiants récupérés:', response.data);
+      }
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des étudiants:', error);

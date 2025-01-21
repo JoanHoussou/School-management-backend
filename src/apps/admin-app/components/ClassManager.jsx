@@ -1,10 +1,12 @@
-import { Card, Table, Button, Modal, Form, Input, Select, Space, Row, Col, Statistic, message, Spin } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, Select, Space, Row, Col, Statistic, message, Spin, Popconfirm } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
 import AppLayout from '../../../shared/components/Layout';
 import { menuItems } from './AdminDashboard';
 import classService from '../../../shared/services/classService';
-import studentService from '../../../shared/services/studentService';
+import {
+  addStudentToClass
+} from '../../../shared/services/studentService';
 import userService from '../../../shared/services/userService';
 
 const { Option } = Select;
@@ -15,9 +17,10 @@ const ClassManager = () => {
   const [selectedClass, setSelectedClass] = useState(null);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [studentLoading, setStudentLoading] = useState(false);
   const [teachers, setTeachers] = useState([]);
   const [students, setStudents] = useState([]);
-  const [form] = Form.useForm();
+  const [classForm] = Form.useForm();
 
   useEffect(() => {
     const fetchTeachers = async () => {
@@ -88,44 +91,51 @@ const ClassManager = () => {
       key: 'actions',
       render: (_, record) => (
         <Space>
-          <Button 
+          <Button
             icon={<UserOutlined />}
             onClick={() => handleViewDetails(record)}
           >
             Détails
           </Button>
-          <Button 
-            icon={<EditOutlined />} 
+          <Button
+            icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
           />
-          <Button
-            icon={<DeleteOutlined />}
-            danger
-            onClick={() => handleDelete(record)}
-          />
+          <Popconfirm
+            title="Êtes-vous sûr de vouloir supprimer cette classe ?"
+            onConfirm={() => handleDelete(record)}
+            okText="Oui"
+            cancelText="Non"
+          >
+            <Button
+              icon={<DeleteOutlined />}
+              danger
+            />
+          </Popconfirm>
           <Button
             type="primary"
+            icon={<UserOutlined />}
             onClick={() => {
               setSelectedClass(record);
               setIsStudentModalVisible(true);
               fetchStudents();
             }}
           >
-            Gérer les étudiants
+            Inscrire un étudiant
           </Button>
         </Space>
       ),
-    }
+    },
   ];
 
   const handleAdd = () => {
-    form.resetFields();
+    classForm.resetFields();
     setIsModalVisible(true);
   };
 
   const handleEdit = (record) => {
     console.log('Édition de la classe:', record);
-    form.setFieldsValue({
+    classForm.setFieldsValue({
       name: record.name,
       level: record.level,
       mainTeacher: record.mainTeacher?._id,
@@ -149,33 +159,51 @@ const ClassManager = () => {
 
   const fetchStudents = async () => {
     try {
+      setStudentLoading(true);
       const studentsData = await userService.getAllStudents();
       setStudents(studentsData);
     } catch (error) {
       console.error('Erreur lors de la récupération des étudiants:', error);
       message.error('Erreur lors de la récupération des étudiants');
+    } finally {
+      setStudentLoading(false);
     }
   };
 
-  const handleAddStudent = async (classId, studentId) => {
-    try {
-      await studentService.addStudentToClass(classId, studentId);
-      message.success('Étudiant ajouté avec succès');
-      fetchClasses();
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout de l\'étudiant:', error);
-      message.error('Erreur lors de l\'ajout de l\'étudiant');
+  const handleAddStudent = async (studentId) => {
+    if (!selectedClass || !studentId) {
+      message.error('Veuillez sélectionner une classe et un étudiant');
+      return;
     }
-  };
-
-  const handleRemoveStudent = async (classId, studentId) => {
+  
     try {
-      await studentService.removeStudentFromClass(classId, studentId);
-      message.success('Étudiant retiré avec succès');
-      fetchClasses();
+      setStudentLoading(true);
+      const result = await addStudentToClass(selectedClass._id, studentId);
+      
+      if (result.success) {
+        message.success(result.message);
+        
+        // Mise à jour des données
+        await fetchClasses();
+        const updatedClass = await classService.getClassById(selectedClass._id);
+        setSelectedClass(updatedClass);
+  
+        // Afficher les statistiques mises à jour
+        console.log('Statistiques de la classe après inscription:', result.classStatus);
+      } else {
+        message.error(result.message || 'Échec de l\'inscription');
+      }
     } catch (error) {
-      console.error('Erreur lors de la suppression de l\'étudiant:', error);
-      message.error('Erreur lors de la suppression de l\'étudiant');
+      console.error('Erreur lors de l\'inscription de l\'étudiant:', error);
+      if (error.response?.status === 400) {
+        message.error(error.response.data.message || 'Erreur lors de l\'inscription : données invalides');
+      } else if (error.response?.status === 401) {
+        message.error('Session expirée, veuillez vous reconnecter');
+      } else {
+        message.error('Erreur lors de l\'inscription de l\'étudiant');
+      }
+    } finally {
+      setStudentLoading(false);
     }
   };
 
@@ -192,7 +220,7 @@ const ClassManager = () => {
   const handleModalOk = async () => {
     try {
       // Validation des champs du formulaire
-      const values = await form.validateFields();
+      const values = await classForm.validateFields();
       console.log('Valeurs du formulaire brutes:', values);
 
       // Normalisation des données
@@ -238,7 +266,7 @@ const ClassManager = () => {
       await fetchClasses();
       
       // Réinitialisation du formulaire
-      form.resetFields();
+      classForm.resetFields();
     } catch (error) {
       console.error('Erreur complète:', error);
       
@@ -329,14 +357,14 @@ const ClassManager = () => {
         </Card>
 
         <Modal
-          title={`${form.getFieldValue('_id') ? 'Modifier' : 'Ajouter'} une classe`}
+          title={`${classForm.getFieldValue('_id') ? 'Modifier' : 'Ajouter'} une classe`}
           open={isModalVisible}
           onOk={handleModalOk}
           onCancel={() => setIsModalVisible(false)}
           width={600}
         >
           <Form
-            form={form}
+            form={classForm}
             layout="vertical"
           >
             <Form.Item
@@ -417,60 +445,76 @@ const ClassManager = () => {
         </Modal>
 
         <Modal
-          title={`Gestion des étudiants - ${selectedClass?.name}`}
+          title={`Inscrire un étudiant - ${selectedClass?.name}`}
           open={isStudentModalVisible}
           onCancel={() => setIsStudentModalVisible(false)}
-          footer={null}
-          width={800}
-        >
-          <div className="flex gap-4">
-            <div className="w-1/2">
-              <h3 className="text-lg font-semibold mb-4">Étudiants inscrits</h3>
-              <Table
-                columns={[
-                  {
-                    title: 'Nom',
-                    dataIndex: 'name',
-                    key: 'name'
-                  },
-                  {
-                    title: 'Actions',
-                    key: 'actions',
-                    render: (_, student) => (
-                      <Button
-                        danger
-                        onClick={() => handleRemoveStudent(selectedClass._id, student._id)}
-                      >
-                        Retirer
-                      </Button>
-                    )
+          footer={[
+            <Button key="cancel" onClick={() => setIsStudentModalVisible(false)}>
+              Annuler
+            </Button>,
+            <Button
+              key="submit"
+              type="primary"
+              loading={studentLoading}
+              onClick={async () => {
+                const studentId = classForm.getFieldValue('student');
+                if (studentId) {
+                  try {
+                    console.log('Données d\'inscription:', {
+                      studentId,
+                      className: selectedClass?.name,
+                      classId: selectedClass?._id
+                    });
+            
+                    await handleAddStudent(studentId);
+                    // Ne fermer le modal que si l'inscription a réussi
+                    setIsStudentModalVisible(false);
+                    classForm.resetFields(['student']);
+                    
+                    // Rafraîchir les données de la classe
+                    const updatedClass = await classService.getClassById(selectedClass._id);
+                    setSelectedClass(updatedClass);
+                    await fetchClasses();
+                  } catch (error) {
+                    console.error('Détails de l\'erreur d\'inscription:', {
+                      error,
+                      studentId,
+                      classId: selectedClass?._id
+                    });
                   }
-                ]}
-                dataSource={selectedClass?.students || []}
-                rowKey="_id"
-              />
-            </div>
-
-            <div className="w-1/2">
-              <h3 className="text-lg font-semibold mb-4">Ajouter des étudiants</h3>
+                } else {
+                  message.error('Veuillez sélectionner un étudiant');
+                }
+              }}
+            >
+              Inscrire
+            </Button>
+          ]}
+        >
+          <Form form={classForm}>
+            <Form.Item
+              name="student"
+              label="Étudiant"
+              rules={[{ required: true, message: 'Veuillez sélectionner un étudiant' }]}
+            >
               <Select
-                mode="multiple"
-                style={{ width: '100%' }}
-                placeholder="Sélectionnez des étudiants"
-                onChange={(selectedIds) => {
-                  selectedIds.forEach(id =>
-                    handleAddStudent(selectedClass._id, id)
-                  );
-                }}
+                showSearch
+                placeholder="Sélectionnez un étudiant"
+                loading={studentLoading}
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
               >
-                {students.map(student => (
-                  <Select.Option key={student._id} value={student._id}>
-                    {student.name}
-                  </Select.Option>
-                ))}
+                {students
+                  .filter(student => !selectedClass?.students?.find(s => s._id === student._id))
+                  .map(student => (
+                    <Select.Option key={student._id} value={student._id}>
+                      {student.name}
+                    </Select.Option>
+                  ))}
               </Select>
-            </div>
-          </div>
+            </Form.Item>
+          </Form>
         </Modal>
       </div>
     </AppLayout>

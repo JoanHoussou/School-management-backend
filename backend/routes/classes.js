@@ -2,15 +2,17 @@ const express = require('express');
 const { authenticateJWT, authorizeRoles } = require('../middlewares/auth');
 const Class = require('../models/Class');
 const User = require('../models/User');
-const Student = require('../models/Student');
 
 const router = express.Router();
 
-// Middleware pour vérifier si l'utilisateur est admin ou professeur
-const isTeacherOrAdmin = authorizeRoles('admin', 'teacher');
+// Middleware d'autorisation utilisé dans les routes
+const authMiddleware = {
+  teacherOrAdmin: authorizeRoles('admin', 'teacher'),
+  adminOnly: authorizeRoles('admin')
+};
 
 // Liste toutes les classes
-router.get('/', authenticateJWT, async (req, res) => {
+router.get('/', authenticateJWT, authMiddleware.teacherOrAdmin, async (req, res) => {
   try {
     const classes = await Class.find()
       .populate('mainTeacher', 'name username')
@@ -23,7 +25,7 @@ router.get('/', authenticateJWT, async (req, res) => {
 });
 
 // Récupère une classe spécifique
-router.get('/:id', authenticateJWT, async (req, res) => {
+router.get('/:id', authenticateJWT, authMiddleware.teacherOrAdmin, async (req, res) => {
   try {
     const classe = await Class.findById(req.params.id)
       .populate('mainTeacher', 'name username')
@@ -133,36 +135,13 @@ router.post('/', authenticateJWT, authorizeRoles('admin'), async (req, res) => {
       });
     }
 
-    // Vérifie si une classe avec le même nom existe déjà pour l'année scolaire
-    const existingClass = await Class.findOne({ name, academicYear });
-    if (existingClass) {
-      return res.status(400).json({ message: 'Une classe avec ce nom existe déjà pour cette année scolaire' });
-    }
-
-    const newClass = new Class({
-      name,
-      level,
-      academicYear,
-      mainTeacher,
-      capacity
-    });
-
-    await newClass.save();
-
-    const populatedClass = await Class.findById(newClass._id)
-      .populate('mainTeacher', 'name username');
-
-    res.status(201).json({
-      message: 'Classe créée avec succès',
-      class: populatedClass
-    });
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la création de la classe', error: error.message });
   }
 });
 
 // Modifie une classe existante (admin uniquement)
-router.put('/:id', authenticateJWT, authorizeRoles('admin'), async (req, res) => {
+router.put('/:id', authenticateJWT, authMiddleware.adminOnly, async (req, res) => {
   try {
     const { name, level, mainTeacher, capacity } = req.body;
     const classId = req.params.id;
@@ -203,7 +182,7 @@ router.put('/:id', authenticateJWT, authorizeRoles('admin'), async (req, res) =>
 });
 
 // Supprime une classe (admin uniquement)
-router.delete('/:id', authenticateJWT, authorizeRoles('admin'), async (req, res) => {
+router.delete('/:id', authenticateJWT, authMiddleware.adminOnly, async (req, res) => {
   try {
     const classe = await Class.findById(req.params.id);
     if (!classe) {
@@ -217,55 +196,75 @@ router.delete('/:id', authenticateJWT, authorizeRoles('admin'), async (req, res)
   }
 });
 
-// Ajoute des étudiants à une classe
-router.post('/:id/students', authenticateJWT, authorizeRoles('admin'), async (req, res) => {
+// Inscription d'étudiants dans une classe
+router.post('/:id/students', authenticateJWT, authMiddleware.adminOnly, async (req, res) => {
   try {
     const { studentIds } = req.body;
-    const classe = await Class.findById(req.params.id);
     
+    if (!studentIds || !Array.isArray(studentIds)) {
+      return res.status(400).json({
+        message: 'Format de données invalide. studentIds doit être un tableau.',
+        received: req.body
+      });
+    }
+
+    const classe = await Class.findById(req.params.id)
+      .populate({
+        path: 'students.student',
+        select: 'name username currentGradeLevel'
+      })
+      .populate('mainTeacher', 'name');
+
     if (!classe) {
       return res.status(404).json({ message: 'Classe non trouvée' });
     }
 
-    // Vérifie si la classe a assez de capacité
-    if (classe.students.length + studentIds.length > classe.capacity) {
-      return res.status(400).json({ message: 'La capacité de la classe serait dépassée' });
+    // Traitement en série des inscriptions
+    const results = [];
+    for (const studentId of studentIds) {
+      try {
+        const result = await classe.addStudent(studentId);
+        results.push({
+          studentId,
+          ...result
+        });
+      } catch (error) {
+        results.push({
+          studentId,
+          success: false,
+          message: error.message
+        });
+      }
     }
 
-    // Vérifie si tous les IDs correspondent à des étudiants valides
-    const students = await User.find({
-      _id: { $in: studentIds },
-      role: 'student'
-    });
-
-    if (students.length !== studentIds.length) {
-      return res.status(400).json({ message: 'Certains IDs d\'étudiants sont invalides' });
-    }
-
-    // Ajoute les étudiants qui ne sont pas déjà dans la classe
-    const newStudents = studentIds.filter(id => !classe.students.includes(id));
-    classe.students.push(...newStudents);
-    
-    await classe.save();
-
-    // Met à jour les classes des étudiants
-    await User.updateMany(
-      { _id: { $in: newStudents } },
-      { $addToSet: { classes: classe._id } }
-    );
-
+    // Rechargement des données mises à jour
     const updatedClass = await Class.findById(req.params.id)
-      .populate('students', 'name username')
-      .populate('mainTeacher', 'name username')
-      .populate('teachers.teacher', 'name username');
+      .populate({
+        path: 'students.student',
+        select: 'name username currentGradeLevel'
+      })
+      .populate('mainTeacher', 'name');
 
-    res.json({
-      message: 'Étudiants ajoutés avec succès',
-      class: updatedClass
-    });
+    // Préparation de la réponse détaillée
+    const response = {
+      message: 'Traitement des inscriptions terminé',
+      results,
+      classStatus: {
+        name: updatedClass.name,
+        activeStudents: updatedClass.students.filter(s => s.status === 'active').length,
+        capacity: updatedClass.capacity,
+        remainingSpots: updatedClass.capacity - updatedClass.students.filter(s => s.status === 'active').length
+      },
+      details: results.filter(r => !r.success).map(r => r.message)
+    };
+
+    res.json(response);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de l\'ajout des étudiants', error: error.message });
+    console.error('Erreur lors des inscriptions:', error);
+    res.status(500).json({
+      message: 'Erreur lors du traitement des inscriptions',
+      error: error.message
+    });
   }
 });
-
 module.exports = router;
