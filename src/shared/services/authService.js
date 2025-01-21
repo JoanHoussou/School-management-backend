@@ -1,12 +1,10 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import axiosInstance from './axiosConfig';
 
 const authService = {
   login: async (credentials) => {
     try {
-      const response = await axios.post(`${API_URL}/auth/login`, credentials, {
-        withCredentials: true // Important pour les cookies
+      const response = await axiosInstance.post('/auth/login', credentials, {
+        withCredentials: true
       });
       
       const { user, token } = response.data;
@@ -16,7 +14,7 @@ const authService = {
       localStorage.setItem('user', JSON.stringify(user));
       
       // Configuration du token pour les futures requêtes
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
       return response.data;
     } catch (error) {
@@ -27,7 +25,7 @@ const authService = {
 
   logout: async () => {
     try {
-      await axios.post(`${API_URL}/auth/logout`, {}, {
+      await axiosInstance.post('/auth/logout', {}, {
         withCredentials: true
       });
     } catch (error) {
@@ -36,7 +34,7 @@ const authService = {
       // Nettoyage local même en cas d'erreur
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
-      delete axios.defaults.headers.common['Authorization'];
+      delete axiosInstance.defaults.headers.common['Authorization'];
     }
   },
 
@@ -53,16 +51,16 @@ const authService = {
   setAuthToken: (token) => {
     if (token) {
       localStorage.setItem('auth_token', token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     } else {
       localStorage.removeItem('auth_token');
-      delete axios.defaults.headers.common['Authorization'];
+      delete axiosInstance.defaults.headers.common['Authorization'];
     }
   },
 
   register: async (userData) => {
     try {
-      const response = await axios.post(`${API_URL}/auth/register`, userData, {
+      const response = await axiosInstance.post('/auth/register', userData, {
         withCredentials: true
       });
       
@@ -71,7 +69,7 @@ const authService = {
       localStorage.setItem('auth_token', token);
       localStorage.setItem('user', JSON.stringify(user));
       
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
       return response.data;
     } catch (error) {
@@ -82,7 +80,7 @@ const authService = {
 
   getProfile: async () => {
     try {
-      const response = await axios.get(`${API_URL}/auth/profile`, {
+      const response = await axiosInstance.get('/auth/profile', {
         withCredentials: true
       });
       return response.data;
@@ -92,14 +90,5 @@ const authService = {
     }
   }
 };
-
-// Configuration globale d'Axios pour les requêtes
-axios.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
 
 export default authService;

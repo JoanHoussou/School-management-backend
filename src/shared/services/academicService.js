@@ -1,11 +1,10 @@
-import axios from 'axios';
+import axiosInstance from './axiosConfig';
 
-const API_URL = import.meta.env.VITE_API_URL;
 
 // Services pour les matières
 const getAllSubjects = async () => {
   try {
-    const response = await axios.get(`${API_URL}/subjects`);
+    const response = await axiosInstance.get('/subjects');
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
@@ -14,7 +13,7 @@ const getAllSubjects = async () => {
 
 const createSubject = async (subjectData) => {
   try {
-    const response = await axios.post(`${API_URL}/subjects`, subjectData);
+    const response = await axiosInstance.post('/subjects', subjectData);
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;

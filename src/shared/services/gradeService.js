@@ -1,12 +1,10 @@
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import axiosInstance from './axiosConfig';
 
 const gradeService = {
   // Récupérer les notes d'un élève
   getStudentGrades: async (studentId) => {
     try {
-      const response = await axios.get(`${API_URL}/grades/student/${studentId}`);
+      const response = await axiosInstance.get(`/grades/student/${studentId}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -17,8 +15,8 @@ const gradeService = {
   getClassGrades: async (classId, filters = {}) => {
     try {
       const queryParams = new URLSearchParams(filters).toString();
-      const url = `${API_URL}/grades/class/${classId}${queryParams ? `?${queryParams}` : ''}`;
-      const response = await axios.get(url);
+      const url = `/grades/class/${classId}${queryParams ? `?${queryParams}` : ''}`;
+      const response = await axiosInstance.get(url);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -29,8 +27,8 @@ const gradeService = {
   getClassStats: async (classId, filters = {}) => {
     try {
       const queryParams = new URLSearchParams(filters).toString();
-      const url = `${API_URL}/grades/stats/class/${classId}${queryParams ? `?${queryParams}` : ''}`;
-      const response = await axios.get(url);
+      const url = `/grades/stats/class/${classId}${queryParams ? `?${queryParams}` : ''}`;
+      const response = await axiosInstance.get(url);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -40,7 +38,7 @@ const gradeService = {
   // Ajouter une note
   createGrade: async (gradeData) => {
     try {
-      const response = await axios.post(`${API_URL}/grades`, gradeData);
+      const response = await axiosInstance.post('/grades', gradeData);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -50,7 +48,7 @@ const gradeService = {
   // Modifier une note
   updateGrade: async (gradeId, gradeData) => {
     try {
-      const response = await axios.put(`${API_URL}/grades/${gradeId}`, gradeData);
+      const response = await axiosInstance.put(`/grades/${gradeId}`, gradeData);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;

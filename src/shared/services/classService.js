@@ -1,12 +1,12 @@
-import axios from 'axios';
+import axiosInstance from './axiosConfig';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'; // A conserver temporairement pour la transition
 
 const classService = {
   // Récupérer toutes les classes
   getAllClasses: async () => {
     try {
-      const response = await axios.get(`${API_URL}/classes`);
+      const response = await axiosInstance.get('/classes');
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des classes:', error);
@@ -57,7 +57,7 @@ const classService = {
   // Supprimer une classe
   deleteClass: async (classId) => {
     try {
-      const response = await axios.delete(`${API_URL}/classes/${classId}`);
+      const response = await axiosInstance.delete(`/classes/${classId}`);
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la suppression de la classe:', error);
