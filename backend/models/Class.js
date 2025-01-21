@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Student = require('./Student');
 
 const classSchema = new mongoose.Schema({
   name: {
@@ -33,7 +34,7 @@ const classSchema = new mongoose.Schema({
   }],
   students: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+    ref: 'Student'
   }],
   capacity: {
     type: Number,
@@ -99,10 +100,17 @@ classSchema.methods.addStudent = function(studentId) {
 };
 
 // Méthode pour retirer un étudiant
-classSchema.methods.removeStudent = function(studentId) {
+classSchema.methods.removeStudent = async function(studentId) {
   const index = this.students.indexOf(studentId);
   if (index > -1) {
     this.students.splice(index, 1);
+    
+    // Met à jour les classes de l'étudiant
+    await Student.findByIdAndUpdate(
+      studentId,
+      { $pull: { classes: this._id } }
+    );
+    
     return true;
   }
   return false;

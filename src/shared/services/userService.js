@@ -12,6 +12,17 @@ const userService = {
       console.error('Erreur lors de la récupération des professeurs:', error);
       throw new Error(error.response?.data?.message || 'Échec de la récupération des professeurs');
     }
+  },
+
+  // Récupérer tous les étudiants
+  getAllStudents: async () => {
+    try {
+      const response = await axios.get(`${API_URL}/users/students`);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des étudiants:', error);
+      throw new Error(error.response?.data?.message || 'Échec de la récupération des étudiants');
+    }
   }
 };
 

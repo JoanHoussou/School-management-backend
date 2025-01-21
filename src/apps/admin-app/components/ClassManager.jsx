@@ -4,16 +4,19 @@ import { useState, useEffect } from 'react';
 import AppLayout from '../../../shared/components/Layout';
 import { menuItems } from './AdminDashboard';
 import classService from '../../../shared/services/classService';
+import studentService from '../../../shared/services/studentService';
 import userService from '../../../shared/services/userService';
 
 const { Option } = Select;
 
 const ClassManager = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isStudentModalVisible, setIsStudentModalVisible] = useState(false);
   const [selectedClass, setSelectedClass] = useState(null);
   const [classes, setClasses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [teachers, setTeachers] = useState([]);
+  const [students, setStudents] = useState([]);
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -95,11 +98,21 @@ const ClassManager = () => {
             icon={<EditOutlined />} 
             onClick={() => handleEdit(record)}
           />
-          <Button 
-            icon={<DeleteOutlined />} 
+          <Button
+            icon={<DeleteOutlined />}
             danger
             onClick={() => handleDelete(record)}
           />
+          <Button
+            type="primary"
+            onClick={() => {
+              setSelectedClass(record);
+              setIsStudentModalVisible(true);
+              fetchStudents();
+            }}
+          >
+            Gérer les étudiants
+          </Button>
         </Space>
       ),
     }
@@ -131,6 +144,38 @@ const ClassManager = () => {
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
       message.error('Erreur lors de la suppression de la classe');
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      const studentsData = await userService.getAllStudents();
+      setStudents(studentsData);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des étudiants:', error);
+      message.error('Erreur lors de la récupération des étudiants');
+    }
+  };
+
+  const handleAddStudent = async (classId, studentId) => {
+    try {
+      await studentService.addStudentToClass(classId, studentId);
+      message.success('Étudiant ajouté avec succès');
+      fetchClasses();
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout de l\'étudiant:', error);
+      message.error('Erreur lors de l\'ajout de l\'étudiant');
+    }
+  };
+
+  const handleRemoveStudent = async (classId, studentId) => {
+    try {
+      await studentService.removeStudentFromClass(classId, studentId);
+      message.success('Étudiant retiré avec succès');
+      fetchClasses();
+    } catch (error) {
+      console.error('Erreur lors de la suppression de l\'étudiant:', error);
+      message.error('Erreur lors de la suppression de l\'étudiant');
     }
   };
 
@@ -369,6 +414,63 @@ const ClassManager = () => {
               </Select>
             </Form.Item>
           </Form>
+        </Modal>
+
+        <Modal
+          title={`Gestion des étudiants - ${selectedClass?.name}`}
+          open={isStudentModalVisible}
+          onCancel={() => setIsStudentModalVisible(false)}
+          footer={null}
+          width={800}
+        >
+          <div className="flex gap-4">
+            <div className="w-1/2">
+              <h3 className="text-lg font-semibold mb-4">Étudiants inscrits</h3>
+              <Table
+                columns={[
+                  {
+                    title: 'Nom',
+                    dataIndex: 'name',
+                    key: 'name'
+                  },
+                  {
+                    title: 'Actions',
+                    key: 'actions',
+                    render: (_, student) => (
+                      <Button
+                        danger
+                        onClick={() => handleRemoveStudent(selectedClass._id, student._id)}
+                      >
+                        Retirer
+                      </Button>
+                    )
+                  }
+                ]}
+                dataSource={selectedClass?.students || []}
+                rowKey="_id"
+              />
+            </div>
+
+            <div className="w-1/2">
+              <h3 className="text-lg font-semibold mb-4">Ajouter des étudiants</h3>
+              <Select
+                mode="multiple"
+                style={{ width: '100%' }}
+                placeholder="Sélectionnez des étudiants"
+                onChange={(selectedIds) => {
+                  selectedIds.forEach(id =>
+                    handleAddStudent(selectedClass._id, id)
+                  );
+                }}
+              >
+                {students.map(student => (
+                  <Select.Option key={student._id} value={student._id}>
+                    {student.name}
+                  </Select.Option>
+                ))}
+              </Select>
+            </div>
+          </div>
         </Modal>
       </div>
     </AppLayout>

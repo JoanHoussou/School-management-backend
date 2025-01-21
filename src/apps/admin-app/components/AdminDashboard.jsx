@@ -38,6 +38,7 @@ import {
 } from '@ant-design/icons';
 import AppLayout from '../../../shared/components/Layout';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const { Title, Text } = Typography;
 
@@ -273,6 +274,7 @@ const initialSchoolStats = {
 };
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [schoolStats, setSchoolStats] = useState(initialSchoolStats);
   const [currentLevelIndex, setCurrentLevelIndex] = useState(0);
   const LEVELS_PER_PAGE = 4;
@@ -290,9 +292,13 @@ const AdminDashboard = () => {
   };
 
   const handleNextPerformance = () => {
-    setCurrentPerformanceIndex(prev => 
+    setCurrentPerformanceIndex(prev =>
       Math.min(prev + 1, performanceLevels.length - 1)
     );
+  };
+
+  const handleManageClasses = () => {
+    navigate('/admin/classes');
   };
 
   const handlePrevPerformance = () => {
@@ -303,7 +309,16 @@ const AdminDashboard = () => {
     <AppLayout menuItems={menuItems}>
       <div className="dashboard-container">
         <div className="dashboard-header">
-          <Title level={2}>Tableau de bord administrateur</Title>
+          <div className="flex justify-between items-center">
+            <Title level={2}>Tableau de bord administrateur</Title>
+            <Button
+              type="primary"
+              icon={<UsergroupAddOutlined />}
+              onClick={handleManageClasses}
+            >
+              Gérer les classes
+            </Button>
+          </div>
         </div>
 
         {/* Quick Stats Row */}
@@ -632,7 +647,7 @@ const AdminDashboard = () => {
           </Col>
         </Row>
 
-        <style jsx global>{`
+        <style>{`
           .dashboard-container {
             padding: 24px;
             min-height: 100vh;

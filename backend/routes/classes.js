@@ -2,6 +2,7 @@ const express = require('express');
 const { authenticateJWT, authorizeRoles } = require('../middlewares/auth');
 const Class = require('../models/Class');
 const User = require('../models/User');
+const Student = require('../models/Student');
 
 const router = express.Router();
 
@@ -217,7 +218,7 @@ router.delete('/:id', authenticateJWT, authorizeRoles('admin'), async (req, res)
 });
 
 // Ajoute des étudiants à une classe
-router.post('/:id/students', authenticateJWT, isTeacherOrAdmin, async (req, res) => {
+router.post('/:id/students', authenticateJWT, authorizeRoles('admin'), async (req, res) => {
   try {
     const { studentIds } = req.body;
     const classe = await Class.findById(req.params.id);
@@ -246,6 +247,12 @@ router.post('/:id/students', authenticateJWT, isTeacherOrAdmin, async (req, res)
     classe.students.push(...newStudents);
     
     await classe.save();
+
+    // Met à jour les classes des étudiants
+    await User.updateMany(
+      { _id: { $in: newStudents } },
+      { $addToSet: { classes: classe._id } }
+    );
 
     const updatedClass = await Class.findById(req.params.id)
       .populate('students', 'name username')
