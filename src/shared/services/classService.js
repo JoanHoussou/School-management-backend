@@ -1,7 +1,5 @@
 import axiosInstance from './axiosConfig';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'; // A conserver temporairement pour la transition
-
 const classService = {
   // Récupérer toutes les classes
   getAllClasses: async () => {
@@ -17,7 +15,7 @@ const classService = {
   // Récupérer une classe spécifique
   getClassById: async (classId) => {
     try {
-      const response = await axios.get(`${API_URL}/classes/${classId}`);
+      const response = await axiosInstance.get(`/classes/${classId}`);
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération de la classe:', error);
@@ -29,7 +27,7 @@ const classService = {
   createClass: async (classData) => {
     try {
       console.log('Envoi des données de classe:', classData);
-      const response = await axios.post(`${API_URL}/classes`, classData);
+      const response = await axiosInstance.post('/classes', classData);
       console.log('Réponse du serveur:', response.data);
       return response.data;
     } catch (error) {
@@ -46,7 +44,7 @@ const classService = {
   // Mettre à jour une classe existante
   updateClass: async (classId, classData) => {
     try {
-      const response = await axios.put(`${API_URL}/classes/${classId}`, classData);
+      const response = await axiosInstance.put(`/classes/${classId}`, classData);
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la mise à jour de la classe:', error);
@@ -68,7 +66,7 @@ const classService = {
   // Récupérer tous les niveaux disponibles
   getLevels: async () => {
     try {
-      const response = await axios.get(`${API_URL}/classes/config/levels`);
+      const response = await axiosInstance.get('/classes/config/levels');
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des niveaux:', error);
