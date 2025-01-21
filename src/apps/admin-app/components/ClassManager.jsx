@@ -140,7 +140,7 @@ const ClassManager = () => {
       level: record.level,
       mainTeacher: record.mainTeacher?._id,
       capacity: record.capacity,
-      year: record.academicYear,
+      academicYear: record.academicYear,
       _id: record._id
     });
     setIsModalVisible(true);
@@ -234,7 +234,7 @@ const ClassManager = () => {
         level: values.level,
         mainTeacher: values.mainTeacher,
         capacity: parseInt(values.capacity, 10),
-        academicYear: values.year || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)
+        academicYear: values.academicYear || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)
       };
 
       // Validation des données normalisées
@@ -436,7 +436,7 @@ const ClassManager = () => {
             </Form.Item>
 
             <Form.Item
-              name="year"
+              name="academicYear"
               label="Année scolaire"
               rules={[{ required: true, message: 'L\'année scolaire est requise' }]}
               initialValue="2023-2024"

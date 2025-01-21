@@ -15,6 +15,32 @@ const createClasses = async (teachers) => {
       teachers: [
         { teacher: teachers[0]._id, subject: 'Mathématiques' },
         { teacher: teachers[1]._id, subject: 'Français' }
+      ],
+      schedule: [
+        {
+          day: 'Lundi',
+          startTime: '08:00',
+          endTime: '10:00',
+          subject: 'Mathématiques',
+          teacher: teachers[0]._id,
+          room: 'Salle 101'
+        },
+        {
+          day: 'Lundi',
+          startTime: '10:15',
+          endTime: '12:15',
+          subject: 'Français',
+          teacher: teachers[1]._id,
+          room: 'Salle 102'
+        }
+      ],
+      notifications: [
+        {
+          message: 'Bienvenue dans la classe de 6ème A',
+          date: new Date(),
+          sentBy: teachers[0]._id,
+          recipients: []
+        }
       ]
     },
     {
@@ -26,6 +52,32 @@ const createClasses = async (teachers) => {
       teachers: [
         { teacher: teachers[1]._id, subject: 'Français' },
         { teacher: teachers[2]._id, subject: 'Histoire-Géo' }
+      ],
+      schedule: [
+        {
+          day: 'Lundi',
+          startTime: '13:00',
+          endTime: '15:00',
+          subject: 'Français',
+          teacher: teachers[1]._id,
+          room: 'Salle 201'
+        },
+        {
+          day: 'Mardi',
+          startTime: '08:00',
+          endTime: '10:00',
+          subject: 'Histoire-Géo',
+          teacher: teachers[2]._id,
+          room: 'Salle 202'
+        }
+      ],
+      notifications: [
+        {
+          message: 'Bienvenue dans la classe de 5ème A',
+          date: new Date(),
+          sentBy: teachers[1]._id,
+          recipients: []
+        }
       ]
     },
     {
@@ -37,6 +89,32 @@ const createClasses = async (teachers) => {
       teachers: [
         { teacher: teachers[2]._id, subject: 'Histoire-Géo' },
         { teacher: teachers[0]._id, subject: 'Mathématiques' }
+      ],
+      schedule: [
+        {
+          day: 'Mardi',
+          startTime: '10:15',
+          endTime: '12:15',
+          subject: 'Histoire-Géo',
+          teacher: teachers[2]._id,
+          room: 'Salle 301'
+        },
+        {
+          day: 'Mercredi',
+          startTime: '08:00',
+          endTime: '10:00',
+          subject: 'Mathématiques',
+          teacher: teachers[0]._id,
+          room: 'Salle 302'
+        }
+      ],
+      notifications: [
+        {
+          message: 'Bienvenue dans la classe de 4ème A',
+          date: new Date(),
+          sentBy: teachers[2]._id,
+          recipients: []
+        }
       ]
     },
     {
@@ -49,6 +127,40 @@ const createClasses = async (teachers) => {
         { teacher: teachers[0]._id, subject: 'Mathématiques' },
         { teacher: teachers[1]._id, subject: 'Français' },
         { teacher: teachers[2]._id, subject: 'Histoire-Géo' }
+      ],
+      schedule: [
+        {
+          day: 'Mercredi',
+          startTime: '10:15',
+          endTime: '12:15',
+          subject: 'Mathématiques',
+          teacher: teachers[0]._id,
+          room: 'Salle 401'
+        },
+        {
+          day: 'Jeudi',
+          startTime: '08:00',
+          endTime: '10:00',
+          subject: 'Français',
+          teacher: teachers[1]._id,
+          room: 'Salle 402'
+        },
+        {
+          day: 'Jeudi',
+          startTime: '10:15',
+          endTime: '12:15',
+          subject: 'Histoire-Géo',
+          teacher: teachers[2]._id,
+          room: 'Salle 403'
+        }
+      ],
+      notifications: [
+        {
+          message: 'Bienvenue dans la classe de 3ème A',
+          date: new Date(),
+          sentBy: teachers[0]._id,
+          recipients: []
+        }
       ]
     }
   ];

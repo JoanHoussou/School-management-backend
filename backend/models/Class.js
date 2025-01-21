@@ -11,7 +11,7 @@ const classSchema = new mongoose.Schema({
   level: {
     type: String,
     required: true,
-    enum: ['6eme', '5eme', '4eme', '3eme', '2nde', '1ere', 'Tle']
+    enum: ['CP', 'CE1', 'CE2', 'CM1', 'CM2', '6eme', '5eme', '4eme', '3eme', '2nde', '1ere', 'Tle']
   },
   academicYear: {
     type: String,
@@ -43,7 +43,7 @@ const classSchema = new mongoose.Schema({
     },
     status: {
       type: String,
-      enum: ['active', 'transferred', 'inactive'],
+      enum: ['active', 'transferred', 'inactive', 'graduated'],
       default: 'active'
     },
     attendance: {
@@ -53,6 +53,7 @@ const classSchema = new mongoose.Schema({
     },
     academicPerformance: {
       averageGrade: { type: Number, default: 0 },
+      rank: { type: Number },
       lastUpdated: Date
     }
   }],
@@ -88,6 +89,12 @@ const classSchema = new mongoose.Schema({
       type: String,
       required: true
     }
+  }],
+  notifications: [{
+    message: { type: String, required: true },
+    date: { type: Date, default: Date.now },
+    sentBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    recipients: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
   }],
   createdAt: {
     type: Date,

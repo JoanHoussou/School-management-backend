@@ -20,13 +20,13 @@ const studentSchema = new mongoose.Schema({
     },
     status: {
       type: String,
-      enum: ['active', 'inactive', 'transferred'],
+      enum: ['active', 'inactive', 'transferred', 'graduated'],
       default: 'active'
     }
   }],
   currentGradeLevel: {
     type: String,
-    enum: ['6eme', '5eme', '4eme', '3eme'],
+    enum: ['CP', 'CE1', 'CE2', 'CM1', 'CM2', '6eme', '5eme', '4eme', '3eme', '2nde', '1ere', 'Tle'],
     required: true
   },
   // Informations personnelles
@@ -83,7 +83,7 @@ const studentSchema = new mongoose.Schema({
     date: Date,
     type: {
       type: String,
-      enum: ['warning', 'detention', 'suspension']
+      enum: ['warning', 'detention', 'suspension', 'expulsion']
     },
     reason: String,
     handledBy: {
@@ -91,6 +91,13 @@ const studentSchema = new mongoose.Schema({
       ref: 'User'
     },
     resolution: String
+  }],
+  // Activités extrascolaires
+  extracurriculars: [{
+    activity: String,
+    role: String,
+    startDate: Date,
+    endDate: Date
   }]
 });
 

@@ -14,8 +14,19 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['student', 'teacher', 'parent', 'admin'],
+    enum: ['student', 'teacher', 'parent', 'admin', 'staff'],
     required: true
+  },
+  phone: {
+    type: String,
+    trim: true
+  },
+  profilePicture: {
+    type: String
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   },
   name: {
     type: String,
