@@ -19,8 +19,6 @@ import AppLayout from '../../../shared/components/Layout';
 import { menuItems } from './AdminDashboard';
 import academicService from '../../../shared/services/academicService';
 import userService from '../../../shared/services/userService';
-
-const { TabPane } = Tabs;
 const { Option } = Select;
 const { TextArea } = Input;
 
@@ -406,26 +404,36 @@ const AcademicManager = () => {
         </div>
 
         <Card>
-          <Tabs activeKey={activeTab} onChange={setActiveTab}>
-            <TabPane tab="Matières" key="subjects">
-              <Spin spinning={loading}>
-                <Table
-                  columns={subjectColumns}
-                  dataSource={subjects}
-                  rowKey="_id"
-                />
-              </Spin>
-            </TabPane>
-            <TabPane tab="Programme scolaire" key="curriculum">
-              <Spin spinning={loading}>
-                <Table
-                  columns={curriculumColumns}
-                  dataSource={curriculum}
-                  rowKey="_id"
-                />
-              </Spin>
-            </TabPane>
-          </Tabs>
+          <Tabs 
+            activeKey={activeTab} 
+            onChange={setActiveTab}
+            items={[
+              {
+                label: 'Matières',
+                key: 'subjects',
+                children: (
+                  <Spin spinning={loading}>
+                    <Table
+  columns={subjectColumns}
+ dataSource={subjects}
+ rowKey="_id" />
+                  </Spin>
+                )
+              },
+              {
+                label: 'Programme scolaire',
+                key: 'curriculum',
+                children: (
+                  <Spin spinning={loading}>
+                    <Table
+  columns={curriculumColumns}
+ dataSource={curriculum}
+ rowKey="_id" />
+                  </Spin>
+                )
+              }
+            ]}
+          />
         </Card>
 
         <Modal
