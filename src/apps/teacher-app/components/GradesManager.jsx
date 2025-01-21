@@ -1,423 +1,372 @@
-import { 
-  Card, 
-  Table, 
-  Button, 
-  Modal, 
-  Form, 
-  InputNumber, 
-  Select, 
-  Tabs, 
-  Row, 
-  Col, 
-  Statistic, 
-  Typography,
-  Progress,
-  Tag,
-  Tooltip,
-  Space,
+import { useState, useEffect } from 'react';
+import {
+  Card,
+  Table,
+  Button,
+  Modal,
+  Form,
   Input,
-  Badge
+  Select,
+  InputNumber,
+  DatePicker,
+  Space,
+  message,
+  Spin,
+  Statistic,
+  Row,
+  Col
 } from 'antd';
-import { 
-  PlusOutlined, 
-  TrophyOutlined,
-  TeamOutlined,
-  CheckCircleOutlined,
-  WarningOutlined,
-  LineChartOutlined,
-  BookOutlined,
-  RiseOutlined,
-  FallOutlined
-} from '@ant-design/icons';
-import { useState } from 'react';
+import { PlusOutlined, EditOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
+import gradeService from '../../../shared/services/gradeService';
+import classService from '../../../shared/services/classService';
+import academicService from '../../../shared/services/academicService';
 import AppLayout from '../../../shared/components/Layout';
 import { menuItems } from './TeacherDashboard';
 
-const { Title, Text } = Typography;
 const { Option } = Select;
-const { TabPane } = Tabs;
 
 const GradesManager = () => {
+  const [loading, setLoading] = useState(false);
+  const [classes, setClasses] = useState([]);
+  const [subjects, setSubjects] = useState([]);
+  const [selectedClass, setSelectedClass] = useState(null);
+  const [selectedSubject, setSelectedSubject] = useState(null);
+  const [grades, setGrades] = useState([]);
+  const [stats, setStats] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [editingGrade, setEditingGrade] = useState(null);
   const [form] = Form.useForm();
-  const [selectedClass, setSelectedClass] = useState('3ème A');
 
-  const classData = {
-    '3ème A': {
-      students: [
-        {
-          key: '1',
-          name: 'Thomas Dubois',
-          grades: [
-            { id: 1, value: 16, type: 'Contrôle', date: '2024-03-15', coefficient: 2 },
-            { id: 2, value: 14, type: 'DM', date: '2024-03-10', coefficient: 1 }
-          ],
-          trend: 'up',
-          lastGrade: 16,
-          attendance: 95
-        },
-        {
-          key: '2',
-          name: 'Marie Martin',
-          grades: [
-            { id: 1, value: 15, type: 'Contrôle', date: '2024-03-15', coefficient: 2 },
-            { id: 2, value: 17, type: 'DM', date: '2024-03-10', coefficient: 1 }
-          ],
-          trend: 'up',
-          lastGrade: 17,
-          attendance: 90
-        }
-      ],
-      stats: {
-        average: 15.5,
-        highest: 18,
-        lowest: 12,
-        aboveAverage: 15,
-        belowAverage: 10,
-        lastEvaluation: {
-          date: '2024-03-15',
-          average: 14.8,
-          type: 'Contrôle'
-        }
-      }
-    },
-    '4ème B': {
-      students: [
-        {
-          key: '3',
-          name: 'Lucas Bernard',
-          grades: [
-            { id: 1, value: 13, type: 'Contrôle', date: '2024-03-14', coefficient: 2 },
-            { id: 2, value: 15, type: 'DM', date: '2024-03-09', coefficient: 1 }
-          ],
-          trend: 'up',
-          lastGrade: 15,
-          attendance: 85
-        }
-      ],
-      stats: {
-        average: 14,
-        highest: 15,
-        lowest: 13,
-        aboveAverage: 14,
-        belowAverage: 10,
-        lastEvaluation: {
-          date: '2024-03-14',
-          average: 14,
-          type: 'Contrôle'
-        }
-      }
+  useEffect(() => {
+    fetchClasses();
+    fetchSubjects();
+  }, []);
+
+  useEffect(() => {
+    if (selectedClass && selectedSubject) {
+      fetchGrades();
+      fetchStats();
+    }
+  }, [selectedClass, selectedSubject]);
+
+  const fetchClasses = async () => {
+    try {
+      const data = await classService.getAllClasses();
+      setClasses(data);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des classes:', error);
+      message.error('Erreur lors de la récupération des classes');
     }
   };
 
-  const renderClassHeader = (classInfo) => (
-    <Row gutter={[16, 16]} className="class-stats-container">
-      <Col xs={24} sm={12} md={6}>
-        <Card bordered={false} className="stat-card primary">
-          <Statistic
-            title="Moyenne de classe"
-            value={classInfo.stats.average}
-            precision={1}
-            suffix="/20"
-            prefix={<TrophyOutlined />}
-            valueStyle={{ color: '#1890ff' }}
-          />
-          <Progress 
-            percent={classInfo.stats.average * 5} 
-            showInfo={false}
-            strokeColor="#1890ff"
-            className="stat-progress"
-          />
-        </Card>
-      </Col>
+  const fetchSubjects = async () => {
+    try {
+      const data = await academicService.getAllSubjects();
+      setSubjects(data);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des matières:', error);
+      message.error('Erreur lors de la récupération des matières');
+    }
+  };
 
-      <Col xs={24} sm={12} md={6}>
-        <Card bordered={false} className="stat-card success">
-          <Statistic
-            title="Au-dessus de la moyenne"
-            value={classInfo.stats.aboveAverage}
-            suffix={`/${classInfo.students.length}`}
-            prefix={<RiseOutlined />}
-            valueStyle={{ color: '#52c41a' }}
-          />
-          <Progress 
-            percent={(classInfo.stats.aboveAverage / classInfo.students.length) * 100}
-            showInfo={false}
-            strokeColor="#52c41a"
-            className="stat-progress"
-          />
-        </Card>
-      </Col>
+  const fetchGrades = async () => {
+    try {
+      setLoading(true);
+      const data = await gradeService.getClassGrades(selectedClass, {
+        subject: selectedSubject
+      });
+      setGrades(data);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des notes:', error);
+      message.error('Erreur lors de la récupération des notes');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      <Col xs={24} sm={12} md={6}>
-        <Card bordered={false} className="stat-card warning">
-          <Statistic
-            title="Note la plus haute"
-            value={classInfo.stats.highest}
-            suffix="/20"
-            prefix={<LineChartOutlined />}
-            valueStyle={{ color: '#faad14' }}
-          />
-          <div className="text-sm text-gray-500 mt-2">
-            Note la plus basse: {classInfo.stats.lowest}/20
-          </div>
-        </Card>
-      </Col>
+  const fetchStats = async () => {
+    try {
+      const data = await gradeService.getClassStats(selectedClass, {
+        subject: selectedSubject
+      });
+      setStats(data);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des statistiques:', error);
+      message.error('Erreur lors de la récupération des statistiques');
+    }
+  };
 
-      <Col xs={24} sm={12} md={6}>
-        <Card bordered={false} className="stat-card info">
-          <div className="last-evaluation">
-            <Text type="secondary">Dernière évaluation</Text>
-            <div className="font-medium">{classInfo.stats.lastEvaluation.type}</div>
-            <div className="text-sm">
-              Moyenne: {classInfo.stats.lastEvaluation.average}/20
-            </div>
-            <div className="text-xs text-gray-500">
-              {new Date(classInfo.stats.lastEvaluation.date).toLocaleDateString()}
-            </div>
-          </div>
-        </Card>
-      </Col>
-    </Row>
-  );
+  const handleAdd = () => {
+    setEditingGrade(null);
+    form.resetFields();
+    setIsModalVisible(true);
+  };
+
+  const handleEdit = (record) => {
+    setEditingGrade(record);
+    form.setFieldsValue({
+      ...record,
+      date: dayjs(record.date)
+    });
+    setIsModalVisible(true);
+  };
+
+  const handleModalOk = async () => {
+    try {
+      const values = await form.validateFields();
+      values.date = values.date.toISOString();
+      
+      if (editingGrade) {
+        await gradeService.updateGrade(editingGrade._id, values);
+        message.success('Note mise à jour avec succès');
+      } else {
+        await gradeService.createGrade({
+          ...values,
+          class: selectedClass,
+          subject: selectedSubject
+        });
+        message.success('Note ajoutée avec succès');
+      }
+
+      setIsModalVisible(false);
+      fetchGrades();
+      fetchStats();
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      message.error('Erreur lors de la sauvegarde de la note');
+    }
+  };
 
   const columns = [
     {
       title: 'Élève',
-      dataIndex: 'name',
-      key: 'name',
-      fixed: 'left',
-      width: 200,
-      render: (text, record) => (
-        <div className="student-info">
-          <div className="flex items-center gap-2">
-            <Badge 
-              status={record.attendance >= 90 ? 'success' : 'warning'} 
-              text={text} 
-            />
-            {record.trend === 'up' ? (
-              <Tag color="success" className="trend-tag">
-                <RiseOutlined /> Progression
-              </Tag>
-            ) : record.trend === 'down' ? (
-              <Tag color="error" className="trend-tag">
-                <FallOutlined /> Baisse
-              </Tag>
-            ) : null}
-          </div>
-          <div className="text-xs text-gray-500">
-            Assiduité: {record.attendance}%
-          </div>
-        </div>
-      )
+      dataIndex: ['student', 'name'],
+      key: 'student',
+      sorter: (a, b) => a.student.name.localeCompare(b.student.name),
     },
     {
-      title: 'Notes',
-      children: classData[selectedClass].students[0]?.grades.map((_, index) => ({
-        title: () => (
-          <div className="grade-header">
-            <div className="font-medium">Note {index + 1}</div>
-            <div className="text-xs text-gray-500">
-              Coef. {classData[selectedClass].students[0].grades[index].coefficient}
-            </div>
-          </div>
-        ),
-        dataIndex: ['grades', index, 'value'],
-        key: `grade${index}`,
-        width: 100,
-        render: (value, record) => (
-          <div className="grade-cell">
-            <Tag 
-              color={value >= 10 ? (value >= 15 ? 'success' : 'processing') : 'error'}
-              className="grade-tag"
-            >
-              {value}/20
-            </Tag>
-            <div className="text-xs text-gray-500">
-              {record.grades[index].type}
-            </div>
-          </div>
-        )
-      }))
+      title: 'Note',
+      dataIndex: 'value',
+      key: 'value',
+      sorter: (a, b) => a.value - b.value,
     },
     {
-      title: 'Moyenne',
-      key: 'average',
-      fixed: 'right',
-      width: 120,
-      render: (_, record) => {
-        const avg = record.grades.reduce((sum, grade) => 
-          sum + (grade.value * grade.coefficient), 0
-        ) / record.grades.reduce((sum, grade) => sum + grade.coefficient, 0);
-        
-        return (
-          <div className="average-cell">
-            <Tag color={
-              avg >= 15 ? 'success' :
-              avg >= 10 ? 'processing' :
-              'error'
-            } className="average-tag">
-              {avg.toFixed(1)}/20
-            </Tag>
-            <Progress 
-              percent={avg * 5} 
-              size="small" 
-              showInfo={false}
-              strokeColor={
-                avg >= 15 ? '#52c41a' :
-                avg >= 10 ? '#1890ff' :
-                '#ff4d4f'
-              }
-            />
-          </div>
-        );
-      }
-    }
+      title: 'Coefficient',
+      dataIndex: 'coefficient',
+      key: 'coefficient',
+    },
+    {
+      title: 'Type',
+      dataIndex: 'type',
+      key: 'type',
+      filters: [
+        { text: 'Devoir', value: 'devoir' },
+        { text: 'Examen', value: 'examen' },
+        { text: 'Projet', value: 'projet' },
+        { text: 'Participation', value: 'participation' },
+      ],
+      onFilter: (value, record) => record.type === value,
+    },
+    {
+      title: 'Date',
+      dataIndex: 'date',
+      key: 'date',
+      render: (date) => dayjs(date).format('DD/MM/YYYY'),
+      sorter: (a, b) => new Date(a.date) - new Date(b.date),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Button
+          icon={<EditOutlined />}
+          onClick={() => handleEdit(record)}
+        />
+      ),
+    },
   ];
 
-  return (
-    <AppLayout menuItems={menuItems}>
-      <div className="grades-container">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <Title level={2} className="!mb-0">Gestion des notes</Title>
-            <Text type="secondary">Année scolaire 2023-2024</Text>
-          </div>
-          <Button 
+  const renderStats = () => {
+    if (!stats) return null;
+
+    return (
+      <Card className="mb-4">
+        <Row gutter={16}>
+          <Col span={6}>
+            <Statistic
+              title="Moyenne de classe"
+              value={stats.average}
+              precision={2}
+            />
+          </Col>
+          <Col span={6}>
+            <Statistic
+              title="Médiane"
+              value={stats.median}
+              precision={2}
+            />
+          </Col>
+          <Col span={6}>
+            <Statistic
+              title="Note la plus haute"
+              value={stats.highest}
+            />
+          </Col>
+          <Col span={6}>
+            <Statistic
+              title="Note la plus basse"
+              value={stats.lowest}
+            />
+          </Col>
+        </Row>
+      </Card>
+    );
+  };
+
+  const content = (
+    <div className="p-6">
+      <Card className="mb-4">
+        <Space size="large">
+          <Select
+            placeholder="Sélectionnez une classe"
+            style={{ width: 200 }}
+            onChange={setSelectedClass}
+            value={selectedClass}
+          >
+            {classes.map(c => (
+              <Option key={c._id} value={c._id}>{c.name}</Option>
+            ))}
+          </Select>
+
+          <Select
+            placeholder="Sélectionnez une matière"
+            style={{ width: 200 }}
+            onChange={setSelectedSubject}
+            value={selectedSubject}
+          >
+            {subjects.map(s => (
+              <Option key={s._id} value={s._id}>{s.name}</Option>
+            ))}
+          </Select>
+
+          <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => setIsModalVisible(true)}
-            size="large"
+            onClick={handleAdd}
+            disabled={!selectedClass || !selectedSubject}
           >
-            Nouvelle évaluation
+            Ajouter une note
           </Button>
-        </div>
+        </Space>
+      </Card>
 
-        <Card bordered={false} className="grades-card">
-          <Tabs
-            activeKey={selectedClass}
-            onChange={setSelectedClass}
-            type="card"
-            className="class-tabs"
-            items={Object.entries(classData).map(([className, data]) => ({
-              key: className,
-              label: (
-                <span>
-                  <TeamOutlined className="mr-2" />
-                  {className}
-                </span>
-              ),
-              children: (
-                <div className="space-y-6">
-                  {renderClassHeader(data)}
-                  <Table 
-                    columns={columns} 
-                    dataSource={data.students}
-                    scroll={{ x: 'max-content' }}
-                    pagination={false}
-                    className="grades-table"
-                  />
-                </div>
-              )
-            }))}
+      {renderStats()}
+
+      <Card>
+        <Spin spinning={loading}>
+          <Table
+            columns={columns}
+            dataSource={grades}
+            rowKey="_id"
           />
-        </Card>
-      </div>
+        </Spin>
+      </Card>
 
-      <style jsx global>{`
-        .grades-container {
-          padding: 24px;
-          max-width: 1600px;
-          margin: 0 auto;
-        }
+      <Modal
+        title={`${editingGrade ? 'Modifier' : 'Ajouter'} une note`}
+        open={isModalVisible}
+        onOk={handleModalOk}
+        onCancel={() => setIsModalVisible(false)}
+        width={600}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+        >
+          <Form.Item
+            name="student"
+            label="Élève"
+            rules={[{ required: true, message: 'Veuillez sélectionner un élève' }]}
+          >
+            <Select placeholder="Sélectionnez un élève">
+              {selectedClass && classes
+                .find(c => c._id === selectedClass)?.students
+                .map(student => (
+                  <Option key={student._id} value={student._id}>
+                    {student.name}
+                  </Option>
+                ))}
+            </Select>
+          </Form.Item>
 
-        .grades-card {
-          border-radius: 12px;
-          overflow: hidden;
-        }
+          <Form.Item
+            name="value"
+            label="Note"
+            rules={[
+              { required: true, message: 'La note est requise' },
+              { type: 'number', min: 0, max: 20, message: 'La note doit être entre 0 et 20' }
+            ]}
+          >
+            <InputNumber min={0} max={20} step={0.5} style={{ width: '100%' }} />
+          </Form.Item>
 
-        .class-stats-container {
-          margin-bottom: 24px;
-        }
+          <Form.Item
+            name="coefficient"
+            label="Coefficient"
+            rules={[{ required: true, message: 'Le coefficient est requis' }]}
+            initialValue={1}
+          >
+            <InputNumber min={1} max={10} style={{ width: '100%' }} />
+          </Form.Item>
 
-        .stat-card {
-          border-radius: 8px;
-          transition: all 0.3s;
-          height: 100%;
-        }
+          <Form.Item
+            name="type"
+            label="Type"
+            rules={[{ required: true, message: 'Le type est requis' }]}
+          >
+            <Select>
+              <Option value="devoir">Devoir</Option>
+              <Option value="examen">Examen</Option>
+              <Option value="projet">Projet</Option>
+              <Option value="participation">Participation</Option>
+              <Option value="autre">Autre</Option>
+            </Select>
+          </Form.Item>
 
-        .stat-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
+          <Form.Item
+            name="term"
+            label="Trimestre"
+            rules={[{ required: true, message: 'Le trimestre est requis' }]}
+          >
+            <Select>
+              <Option value="T1">Trimestre 1</Option>
+              <Option value="T2">Trimestre 2</Option>
+              <Option value="T3">Trimestre 3</Option>
+            </Select>
+          </Form.Item>
 
-        .stat-progress {
-          margin-top: 8px;
-        }
+          <Form.Item
+            name="date"
+            label="Date"
+            rules={[{ required: true, message: 'La date est requise' }]}
+            initialValue={dayjs()}
+          >
+            <DatePicker style={{ width: '100%' }} />
+          </Form.Item>
 
-        .grade-header {
-          text-align: center;
-        }
-
-        .grade-cell {
-          text-align: center;
-        }
-
-        .grade-tag {
-          min-width: 60px;
-          text-align: center;
-        }
-
-        .average-cell {
-          text-align: center;
-        }
-
-        .average-tag {
-          min-width: 70px;
-          margin-bottom: 4px;
-        }
-
-        .trend-tag {
-          font-size: 11px;
-          padding: 0 6px;
-        }
-
-        .student-info {
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-        }
-
-        .class-tabs .ant-tabs-nav {
-          margin-bottom: 24px;
-        }
-
-        .class-tabs .ant-tabs-tab {
-          padding: 8px 16px;
-          transition: all 0.3s;
-        }
-
-        .class-tabs .ant-tabs-tab-active {
-          background: #1890ff;
-          border-color: #1890ff;
-        }
-
-        .class-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
-          color: white;
-        }
-
-        .grades-table .ant-table-cell {
-          padding: 12px 16px !important;
-        }
-
-        @media (max-width: 768px) {
-          .grades-container {
-            padding: 16px;
-          }
-        }
-      `}</style>
-    </AppLayout>
+          <Form.Item
+            name="description"
+            label="Description"
+          >
+            <Input.TextArea rows={4} />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
   );
+
+  return <AppLayout menuItems={menuItems}>{content}</AppLayout>;
 };
 
-export default GradesManager; 
+export default GradesManager;

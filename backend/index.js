@@ -32,10 +32,13 @@ require('./config/passport');
 app.use(passport.initialize());
 
 // Configuration des routes
+const gradeRoutes = require('./routes/grades');
+
 app.use('/api/auth', authRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api', academicRoutes);
+app.use('/api/grades', gradeRoutes);
 
 // Route de test
 app.get('/', (req, res) => {

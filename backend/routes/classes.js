@@ -267,4 +267,19 @@ router.post('/:id/students', authenticateJWT, authMiddleware.adminOnly, async (r
     });
   }
 });
+// Récupérer les niveaux disponibles
+// Récupérer les niveaux disponibles
+router.get('/config/levels', authenticateJWT, async (req, res) => {
+  try {
+    const Class = require('../models/Class');
+    const levels = Class.schema.path('level').enumValues;
+    res.json(levels);
+  } catch (error) {
+    res.status(500).json({
+      message: 'Erreur lors de la récupération des niveaux',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

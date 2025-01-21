@@ -63,6 +63,17 @@ const classService = {
       console.error('Erreur lors de la suppression de la classe:', error);
       throw new Error(error.response?.data?.message || 'Échec de la suppression de la classe');
     }
+  },
+
+  // Récupérer tous les niveaux disponibles
+  getLevels: async () => {
+    try {
+      const response = await axios.get(`${API_URL}/classes/config/levels`);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des niveaux:', error);
+      throw error.response?.data || error.message;
+    }
   }
 };
 

@@ -5,6 +5,7 @@ import CourseManager from './components/CourseManager';
 import Schedule from './components/Schedule';
 import Messaging from './components/Messaging';
 import ClassList from './components/ClassList';
+import GradesManager from './components/GradesManager';
 
 const TeacherApp = () => {
   return (
@@ -15,6 +16,7 @@ const TeacherApp = () => {
       <Route path="/classes" element={<ClassList />} />
       <Route path="/schedule" element={<Schedule />} />
       <Route path="/messages" element={<Messaging />} />
+      <Route path="/grades" element={<GradesManager />} />
     </Routes>
   );
 };

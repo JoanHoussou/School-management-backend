@@ -18,13 +18,14 @@ import {
   Select
 } from 'antd';
 import { 
-  DashboardOutlined, 
-  BookOutlined, 
+  DashboardOutlined,
+  BookOutlined,
   CheckSquareOutlined,
   ScheduleOutlined,
   MessageOutlined,
   UserOutlined,
   TeamOutlined,
+  FileTextOutlined,
   ClockCircleOutlined,
   BellOutlined,
   CalendarOutlined,
@@ -38,8 +39,7 @@ import {
   EnvironmentOutlined,
   BarChartOutlined,
   StarOutlined,
-  StarFilled,
-  FileTextOutlined
+  StarFilled
 } from '@ant-design/icons';
 import AppLayout from '../../../shared/components/Layout';
 import { useState, useEffect } from 'react';
@@ -78,6 +78,11 @@ export const menuItems = [
     key: '/teacher/schedule',
     icon: <ScheduleOutlined />,
     label: 'Emploi du temps'
+  },
+  {
+    key: '/teacher/grades',
+    icon: <FileTextOutlined />,
+    label: 'Notes'
   },
   {
     key: '/teacher/messages',

@@ -1,6 +1,7 @@
 import { Card, Table, Button, Modal, Form, Input, Select, Space, Row, Col, Statistic, message, Spin, Popconfirm } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, UserOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
+import { CLASS_CONFIG } from '../../../shared/utils/academicConfig';
 import AppLayout from '../../../shared/components/Layout';
 import { menuItems } from './AdminDashboard';
 import classService from '../../../shared/services/classService';
@@ -20,9 +21,21 @@ const ClassManager = () => {
   const [studentLoading, setStudentLoading] = useState(false);
   const [teachers, setTeachers] = useState([]);
   const [students, setStudents] = useState([]);
+  const [levels, setLevels] = useState([]);
   const [classForm] = Form.useForm();
 
+  const fetchLevels = async () => {
+    try {
+      const levelsData = await classService.getLevels();
+      setLevels(levelsData);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des niveaux:', error);
+      message.error('Erreur lors de la récupération des niveaux');
+    }
+  };
+
   useEffect(() => {
+    fetchLevels();
     const fetchTeachers = async () => {
       try {
         const teachersData = await userService.getAllTeachers();
@@ -78,12 +91,10 @@ const ClassManager = () => {
       title: 'Niveau',
       dataIndex: 'level',
       key: 'level',
-      filters: [
-        { text: '6ème', value: '6eme' },
-        { text: '5ème', value: '5eme' },
-        { text: '4ème', value: '4eme' },
-        { text: '3ème', value: '3eme' },
-      ],
+      filters: levels.map(level => ({
+        text: level.replace('eme', 'ème').replace('ere', 'ère'),
+        value: level
+      })),
       onFilter: (value, record) => record.level === value,
     },
     {
@@ -392,11 +403,12 @@ const ClassManager = () => {
               label="Niveau"
               rules={[{ required: true, message: 'Le niveau est requis' }]}
             >
-              <Select>
-                <Option value="6eme">6ème</Option>
-                <Option value="5eme">5ème</Option>
-                <Option value="4eme">4ème</Option>
-                <Option value="3eme">3ème</Option>
+              <Select loading={!levels.length}>
+                {levels.map(level => (
+                  <Option key={level} value={level}>
+                    {level.replace('eme', 'ème').replace('ere', 'ère')}
+                  </Option>
+                ))}
               </Select>
             </Form.Item>
 
@@ -425,10 +437,15 @@ const ClassManager = () => {
             <Form.Item
               name="capacity"
               label="Capacité"
-              initialValue={30}
+              initialValue={CLASS_CONFIG.defaultCapacity}
               rules={[
                 { required: true, message: 'La capacité est requise' },
-                { type: 'number', min: 1, max: 40, message: 'La capacité doit être entre 1 et 40' },
+                {
+                  type: 'number',
+                  min: CLASS_CONFIG.minCapacity,
+                  max: CLASS_CONFIG.maxCapacity,
+                  message: `La capacité doit être entre ${CLASS_CONFIG.minCapacity} et ${CLASS_CONFIG.maxCapacity}`
+                },
                 { transform: (value) => Number(value) }
               ]}
             >
@@ -444,6 +461,7 @@ const ClassManager = () => {
               <Select>
                 <Option value="2023-2024">2023-2024</Option>
                 <Option value="2024-2025">2024-2025</Option>
+                <Option value="2025-2026">2025-2026</Option>
               </Select>
             </Form.Item>
           </Form>
