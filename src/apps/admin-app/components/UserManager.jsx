@@ -1,10 +1,9 @@
-import { Card, Table, Button, Modal, Form, Input, Select, Tag, Space, Tabs, Row, Col, Statistic, Breadcrumb, message, Calendar, Badge, Tooltip, Alert } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, Select, Tag, Space, Tabs, Row, Col, Statistic, Breadcrumb, message, Calendar, Badge, Tooltip } from 'antd';
 import { Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined, BookOutlined, UserOutlined, CalendarOutlined, DownloadOutlined, TableOutlined } from '@ant-design/icons';
 import { useState } from 'react';
 import AppLayout from '../../../shared/components/Layout';
 import { menuItems } from './AdminDashboard';
-import moment from 'moment';
 import 'moment/locale/fr';
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
@@ -13,8 +12,6 @@ const { Option } = Select;
 const { TabPane } = Tabs;
 const { Title, Text } = Typography;
 
-const MAX_HOURS_PER_DAY = 6; // Maximum 6 heures par jour
-const MAX_CONSECUTIVE_HOURS = 4; // Maximum 4 heures consécutives
 const TIME_SLOTS = ['8h-10h', '10h-12h', '14h-16h', '16h-18h'];
 
 const timeSlots = [
@@ -52,7 +49,6 @@ const UserManager = () => {
     classes: {}    // { className: { day: { timeSlot: { subject, teacherId } } } }
   });
   const [scheduleView, setScheduleView] = useState('table'); // 'table' ou 'calendar'
-  const [validationErrors, setValidationErrors] = useState([]);
 
   const users = {
     students: [
@@ -276,13 +272,13 @@ const UserManager = () => {
     setIsModalVisible(true);
   };
 
-  const handleDelete = (key) => {
+  const handleDelete = () => {
     // Logique de suppression
   };
 
   const handleModalOk = () => {
-    form.validateFields().then(values => {
-      // Logique d'ajout/modification
+    form.validateFields().then(() => {
+      // Logic for add/edit
       setIsModalVisible(false);
     });
   };
@@ -348,7 +344,7 @@ const UserManager = () => {
     Object.entries(values).forEach(([day, slots]) => {
       Object.entries(slots).forEach(([timeSlot, teacherSubject]) => {
         if (teacherSubject) {
-          const [teacherId, subject] = teacherSubject.split('-');
+          const [teacherId] = teacherSubject.split('-');
           
           // Vérifier si le professeur est déjà occupé
           const teacherSchedule = schedules.teachers[teacherId]?.[day]?.[timeSlot] || [];
@@ -888,44 +884,6 @@ const UserManager = () => {
     }
   ];
 
-  const validateSchedule = (values, type) => {
-    const errors = [];
-    
-    Object.entries(values).forEach(([day, slots]) => {
-      // Vérifier le nombre d'heures par jour
-      const dailyHours = Object.keys(slots).length * 2;
-      if (dailyHours > MAX_HOURS_PER_DAY) {
-        errors.push(`${day}: Maximum ${MAX_HOURS_PER_DAY} heures par jour dépassé (${dailyHours} heures)`);
-      }
-
-      // Vérifier les heures consécutives
-      let consecutiveHours = 0;
-      let previousSlot = null;
-      TIME_SLOTS.forEach(slot => {
-        if (slots[slot]) {
-          if (previousSlot && isConsecutiveSlot(previousSlot, slot)) {
-            consecutiveHours += 2;
-          } else {
-            consecutiveHours = 2;
-          }
-          if (consecutiveHours > MAX_CONSECUTIVE_HOURS) {
-            errors.push(`${day}: Maximum ${MAX_CONSECUTIVE_HOURS} heures consécutives dépassé`);
-          }
-          previousSlot = slot;
-        }
-      });
-    });
-
-    return errors;
-  };
-
-  const isConsecutiveSlot = (slot1, slot2) => {
-    const slots = TIME_SLOTS;
-    const index1 = slots.indexOf(slot1);
-    const index2 = slots.indexOf(slot2);
-    return index2 - index1 === 1;
-  };
-
   const renderScheduleContent = (type) => {
     const scheduleData = type === 'teacher' ? 
       schedules.teachers[selectedTeacher?.key] : 
@@ -1311,7 +1269,7 @@ const UserManager = () => {
           </Form>
         </Modal>
 
-        <style jsx global>{`
+        <style className="user-manager-styles">{`
           .user-manager-container {
             padding: 24px;
           }
