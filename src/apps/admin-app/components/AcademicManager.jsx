@@ -1,334 +1,322 @@
-import { Card, Tabs, Table, Button, Modal, Form, Input, Select, TimePicker, Space } from 'antd';
+import { useState, useEffect } from 'react';
+import {
+  Card,
+  Tabs,
+  Table,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Select,
+  InputNumber,
+  message,
+  Space,
+  Popconfirm,
+  Spin
+} from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { useState } from 'react';
 import AppLayout from '../../../shared/components/Layout';
 import { menuItems } from './AdminDashboard';
+import academicService from '../../../shared/services/academicService';
+import userService from '../../../shared/services/userService';
 
 const { TabPane } = Tabs;
 const { Option } = Select;
+const { TextArea } = Input;
 
 const AcademicManager = () => {
+  const [activeTab, setActiveTab] = useState('subjects');
+  const [subjects, setSubjects] = useState([]);
+  const [curriculum, setCurriculum] = useState([]);
+  const [teachers, setTeachers] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [currentTab, setCurrentTab] = useState('subjects');
+  const [editingRecord, setEditingRecord] = useState(null);
   const [form] = Form.useForm();
 
-  const academicData = {
-    subjects: [
-      {
-        key: '1',
-        name: 'Mathématiques',
-        code: 'MATH',
-        level: 'Collège',
-        teachers: ['Prof. Martin', 'Prof. Bernard']
-      },
-      {
-        key: '2',
-        name: 'Français',
-        code: 'FR',
-        level: 'Collège',
-        teachers: ['Prof. Dubois']
-      }
-    ],
-    schedules: [
-      {
-        key: '1',
-        class: '3ème A',
-        subject: 'Mathématiques',
-        teacher: 'Prof. Martin',
-        day: 'Lundi',
-        timeSlot: '08:00-10:00',
-        room: 'Salle 101'
-      },
-      {
-        key: '2',
-        class: '3ème A',
-        subject: 'Français',
-        teacher: 'Prof. Dubois',
-        day: 'Lundi',
-        timeSlot: '10:00-12:00',
-        room: 'Salle 102'
-      }
-    ]
+  useEffect(() => {
+    fetchTeachers();
+    if (activeTab === 'subjects') {
+      fetchSubjects();
+    } else {
+      fetchCurriculum();
+    }
+  }, [activeTab]);
+
+  const fetchTeachers = async () => {
+    try {
+      const data = await userService.getAllTeachers();
+      setTeachers(data);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des professeurs:', error);
+      message.error('Erreur lors de la récupération des professeurs');
+    }
   };
 
-  const columns = {
-    subjects: [
-      {
-        title: 'Nom',
-        dataIndex: 'name',
-        key: 'name',
-      },
-      {
-        title: 'Code',
-        dataIndex: 'code',
-        key: 'code',
-      },
-      {
-        title: 'Niveau',
-        dataIndex: 'level',
-        key: 'level',
-      },
-      {
-        title: 'Enseignants',
-        dataIndex: 'teachers',
-        key: 'teachers',
-        render: (teachers) => teachers.join(', '),
-      },
-      {
-        title: 'Actions',
-        key: 'actions',
-        render: (_, record) => (
-          <Space>
-            <Button 
-              icon={<EditOutlined />} 
-              onClick={() => handleEdit(record)}
-            />
-            <Button 
-              icon={<DeleteOutlined />} 
-              danger
-              onClick={() => handleDelete(record.key)}
-            />
-          </Space>
-        ),
-      }
-    ],
-    schedules: [
-      {
-        title: 'Classe',
-        dataIndex: 'class',
-        key: 'class',
-        filters: [
-          { text: '3ème A', value: '3ème A' },
-          { text: '3ème B', value: '3ème B' },
-        ],
-        onFilter: (value, record) => record.class === value,
-      },
-      {
-        title: 'Matière',
-        dataIndex: 'subject',
-        key: 'subject',
-      },
-      {
-        title: 'Enseignant',
-        dataIndex: 'teacher',
-        key: 'teacher',
-      },
-      {
-        title: 'Jour',
-        dataIndex: 'day',
-        key: 'day',
-      },
-      {
-        title: 'Horaire',
-        dataIndex: 'timeSlot',
-        key: 'timeSlot',
-      },
-      {
-        title: 'Salle',
-        dataIndex: 'room',
-        key: 'room',
-      },
-      {
-        title: 'Actions',
-        key: 'actions',
-        render: (_, record) => (
-          <Space>
-            <Button 
-              icon={<EditOutlined />} 
-              onClick={() => handleEdit(record)}
-            />
-            <Button 
-              icon={<DeleteOutlined />} 
-              danger
-              onClick={() => handleDelete(record.key)}
-            />
-          </Space>
-        ),
-      }
-    ]
+  const fetchSubjects = async () => {
+    try {
+      setLoading(true);
+      const data = await academicService.getAllSubjects();
+      setSubjects(data);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des matières:', error);
+      message.error('Erreur lors de la récupération des matières');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCurriculum = async () => {
+    try {
+      setLoading(true);
+      const data = await academicService.getCurriculum();
+      setCurriculum(data);
+    } catch (error) {
+      console.error('Erreur lors de la récupération du programme scolaire:', error);
+      message.error('Erreur lors de la récupération du programme scolaire');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAdd = () => {
+    setEditingRecord(null);
     form.resetFields();
     setIsModalVisible(true);
   };
 
+  const handleDelete = async (record) => {
+    try {
+      message.info(`Suppression de ${record.name} à implémenter`);
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      message.error('Erreur lors de la suppression');
+    }
+  };
+
   const handleEdit = (record) => {
+    setEditingRecord(record);
     form.setFieldsValue(record);
     setIsModalVisible(true);
   };
 
-  const handleDelete = (key) => {
-    // Logique de suppression
-  };
+  const handleModalOk = async () => {
+    try {
+      const values = await form.validateFields();
+      
+      if (activeTab === 'subjects') {
+        if (editingRecord) {
+          await academicService.updateSubject(editingRecord._id, values);
+          message.success('Matière mise à jour avec succès');
+        } else {
+          await academicService.createSubject(values);
+          message.success('Matière créée avec succès');
+        }
+        fetchSubjects();
+      } else {
+        if (editingRecord) {
+          await academicService.updateCurriculum(editingRecord._id, values);
+          message.success('Programme mis à jour avec succès');
+        } else {
+          await academicService.createCurriculum(values);
+          message.success('Programme créé avec succès');
+        }
+        fetchCurriculum();
+      }
 
-  const handleModalOk = () => {
-    form.validateFields().then(values => {
-      // Logique d'ajout/modification
       setIsModalVisible(false);
-    });
+      form.resetFields();
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      message.error(`Erreur lors de la sauvegarde: ${error.message || 'Erreur inconnue'}`);
+    }
   };
 
-  const renderForm = () => {
-    const forms = {
-      subjects: (
-        <>
-          <Form.Item
-            name="name"
-            label="Nom de la matière"
-            rules={[{ required: true }]}
+  const subjectColumns = [
+    {
+      title: 'Code',
+      dataIndex: 'code',
+      key: 'code',
+    },
+    {
+      title: 'Nom',
+      dataIndex: 'name',
+      key: 'name',
+    },
+    {
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
+    },
+    {
+      title: 'Heures/Semaine',
+      dataIndex: 'hoursPerWeek',
+      key: 'hoursPerWeek',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Space>
+          <Button
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+          />
+          <Popconfirm
+            title="Êtes-vous sûr de vouloir supprimer cette matière ?"
+            onConfirm={() => handleDelete(record)}
+            okText="Oui"
+            cancelText="Non"
           >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="code"
-            label="Code"
-            rules={[{ required: true }]}
-          >
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="level"
-            label="Niveau"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Option value="Collège">Collège</Option>
-              <Option value="Lycée">Lycée</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="teachers"
-            label="Enseignants"
-            rules={[{ required: true }]}
-          >
-            <Select mode="multiple">
-              <Option value="Prof. Martin">Prof. Martin</Option>
-              <Option value="Prof. Dubois">Prof. Dubois</Option>
-              <Option value="Prof. Bernard">Prof. Bernard</Option>
-            </Select>
-          </Form.Item>
-        </>
+            <Button icon={<DeleteOutlined />} danger />
+          </Popconfirm>
+        </Space>
       ),
-      schedules: (
-        <>
-          <Form.Item
-            name="class"
-            label="Classe"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Option value="3ème A">3ème A</Option>
-              <Option value="3ème B">3ème B</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="subject"
-            label="Matière"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Option value="Mathématiques">Mathématiques</Option>
-              <Option value="Français">Français</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="teacher"
-            label="Enseignant"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Option value="Prof. Martin">Prof. Martin</Option>
-              <Option value="Prof. Dubois">Prof. Dubois</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="day"
-            label="Jour"
-            rules={[{ required: true }]}
-          >
-            <Select>
-              <Option value="Lundi">Lundi</Option>
-              <Option value="Mardi">Mardi</Option>
-              <Option value="Mercredi">Mercredi</Option>
-              <Option value="Jeudi">Jeudi</Option>
-              <Option value="Vendredi">Vendredi</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="timeSlot"
-            label="Horaire"
-            rules={[{ required: true }]}
-          >
-            <TimePicker.RangePicker format="HH:mm" />
-          </Form.Item>
-          <Form.Item
-            name="room"
-            label="Salle"
-            rules={[{ required: true }]}
-          >
-            <Input />
-          </Form.Item>
-        </>
-      )
-    };
+    },
+  ];
 
-    return forms[currentTab] || null;
-  };
+  const curriculumColumns = [
+    {
+      title: 'Matière',
+      dataIndex: ['subject', 'name'],
+      key: 'subject',
+    },
+    {
+      title: 'Niveau',
+      dataIndex: 'level',
+      key: 'level',
+    },
+    {
+      title: 'Année',
+      dataIndex: 'academicYear',
+      key: 'academicYear',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_, record) => (
+        <Space>
+          <Button
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+          />
+        </Space>
+      ),
+    },
+  ];
+
+  const renderSubjectForm = () => (
+    <Form form={form} layout="vertical">
+      <Form.Item
+        name="code"
+        label="Code"
+        rules={[{ required: true, message: 'Le code est requis' }]}
+      >
+        <Input />
+      </Form.Item>
+
+      <Form.Item
+        name="name"
+        label="Nom"
+        rules={[{ required: true, message: 'Le nom est requis' }]}
+      >
+        <Input />
+      </Form.Item>
+
+      <Form.Item
+        name="description"
+        label="Description"
+      >
+        <TextArea rows={4} />
+      </Form.Item>
+
+      <Form.Item
+        name="hoursPerWeek"
+        label="Heures par semaine"
+        rules={[{ required: true, message: 'Le nombre d\'heures est requis' }]}
+      >
+        <InputNumber min={1} max={20} />
+      </Form.Item>
+
+      <Form.Item
+        name="levels"
+        label="Niveaux"
+        rules={[{ required: true, message: 'Au moins un niveau est requis' }]}
+      >
+        <Select mode="multiple">
+          {['CP', 'CE1', 'CE2', 'CM1', 'CM2', '6eme', '5eme', '4eme', '3eme'].map(level => (
+            <Option key={level} value={level}>{level}</Option>
+          ))}
+        </Select>
+      </Form.Item>
+
+      <Form.Item
+        name="teachers"
+        label="Professeurs"
+      >
+        <Select mode="multiple">
+          {teachers.map(teacher => (
+            <Option key={teacher._id} value={teacher._id}>{teacher.name}</Option>
+          ))}
+        </Select>
+      </Form.Item>
+    </Form>
+  );
 
   return (
     <AppLayout menuItems={menuItems}>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold">Gestion académique</h2>
-          <Button 
+          <h2 className="text-2xl font-bold">Gestion Académique</h2>
+          <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleAdd}
           >
-            {currentTab === 'subjects' ? 'Nouvelle matière' : 'Nouveau cours'}
+            {activeTab === 'subjects' ? 'Nouvelle matière' : 'Nouveau programme'}
           </Button>
         </div>
 
         <Card>
-          <Tabs 
-            activeKey={currentTab}
-            onChange={setCurrentTab}
-          >
+          <Tabs activeKey={activeTab} onChange={setActiveTab}>
             <TabPane tab="Matières" key="subjects">
-              <Table 
-                columns={columns.subjects} 
-                dataSource={academicData.subjects}
-              />
+              <Spin spinning={loading}>
+                <Table
+                  columns={subjectColumns}
+                  dataSource={subjects}
+                  rowKey="_id"
+                />
+              </Spin>
             </TabPane>
-            <TabPane tab="Emplois du temps" key="schedules">
-              <Table 
-                columns={columns.schedules} 
-                dataSource={academicData.schedules}
-              />
+            <TabPane tab="Programme scolaire" key="curriculum">
+              <Spin spinning={loading}>
+                <Table
+                  columns={curriculumColumns}
+                  dataSource={curriculum}
+                  rowKey="_id"
+                />
+              </Spin>
             </TabPane>
           </Tabs>
         </Card>
 
         <Modal
-          title={`${form.getFieldValue('key') ? 'Modifier' : 'Ajouter'} ${
-            currentTab === 'subjects' ? 'une matière' : 'un cours'
-          }`}
+          title={`${editingRecord ? 'Modifier' : 'Ajouter'} ${activeTab === 'subjects' ? 'une matière' : 'un programme'}`}
           open={isModalVisible}
           onOk={handleModalOk}
           onCancel={() => setIsModalVisible(false)}
-          width={600}
+          width={800}
         >
-          <Form
-            form={form}
-            layout="vertical"
-          >
-            {renderForm()}
-          </Form>
+          {activeTab === 'subjects' ? renderSubjectForm() : null}
         </Modal>
       </div>
     </AppLayout>
   );
 };
 
-export default AcademicManager; 
+export default AcademicManager;

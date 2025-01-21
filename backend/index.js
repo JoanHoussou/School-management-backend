@@ -6,6 +6,7 @@ const connectDB = require('./config/database');
 const authRoutes = require('./routes/auth');
 const classRoutes = require('./routes/classes');
 const userRoutes = require('./routes/users');
+const academicRoutes = require('./routes/academic');
 
 // Initialisation de l'application Express
 const app = express();
@@ -34,6 +35,7 @@ app.use(passport.initialize());
 app.use('/api/auth', authRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api', academicRoutes);
 
 // Route de test
 app.get('/', (req, res) => {
