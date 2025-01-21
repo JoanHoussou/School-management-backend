@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const classRoutes = require('./routes/classes');
 const userRoutes = require('./routes/users');
 const academicRoutes = require('./routes/academic');
+const assignmentRoutes = require('./routes/assignments');
 
 // Initialisation de l'application Express
 const app = express();
@@ -39,6 +40,7 @@ app.use('/api/classes', classRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api', academicRoutes);
 app.use('/api/grades', gradeRoutes);
+app.use('/api/assignments', assignmentRoutes);
 
 // Route de test
 app.get('/', (req, res) => {
