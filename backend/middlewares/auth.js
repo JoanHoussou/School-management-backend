@@ -7,11 +7,13 @@ const authenticateJWT = passport.authenticate('jwt', { session: false });
 // Middleware pour vérifier les rôles
 const authorizeRoles = (...roles) => {
   return (req, res, next) => {
+    console.log('User in request:', req.user);
     if (!req.user) {
       return res.status(401).json({ message: 'Non authentifié' });
     }
 
     if (!roles.includes(req.user.role)) {
+      console.log('Role required:', roles, 'User role:', req.user.role);
       return res.status(403).json({ 
         message: 'Vous n\'avez pas les permissions nécessaires'
       });

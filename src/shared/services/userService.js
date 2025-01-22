@@ -25,6 +25,18 @@ const userService = {
       console.error('Erreur lors de la récupération des étudiants:', error);
       throw new Error(error.response?.data?.message || 'Échec de la récupération des étudiants');
     }
+  },
+
+  // Créer un nouvel utilisateur
+  createUser: async (userData) => {
+    try {
+      const response = await axiosInstance.post('/users', userData);
+      console.log('Utilisateur créé:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la création de l\'utilisateur:', error);
+      throw new Error(error.response?.data?.message || 'Échec de la création de l\'utilisateur');
+    }
   }
 };
 

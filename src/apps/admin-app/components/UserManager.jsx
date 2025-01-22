@@ -4,6 +4,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined, BookOutlined,
 import { useState } from 'react';
 import AppLayout from '../../../shared/components/Layout';
 import { menuItems } from './AdminDashboard';
+import userService from '../../../shared/services/userService';
 import 'moment/locale/fr';
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
@@ -278,8 +279,16 @@ const UserManager = () => {
 
   const handleModalOk = () => {
     form.validateFields().then(() => {
-      // Logic for add/edit
-      setIsModalVisible(false);
+      const values = form.getFieldsValue();
+      const userData = {
+        ...values,
+        isActive: true,
+        role: currentUserType === 'students' ? 'student' : 
+              currentUserType === 'teachers' ? 'teacher' : 'parent'
+      };
+      userService.createUser(userData)
+        .then(() => setIsModalVisible(false))
+        .catch(error => message.error('Erreur lors de la création: ' + error.message));
     });
   };
 
@@ -425,7 +434,7 @@ const UserManager = () => {
           <Form.Item
             name="name"
             label="Nom"
-            rules={[{ required: true }]}
+            rules={[{ required: true, message: 'Le nom est requis' }]}
           >
             <Input />
           </Form.Item>
@@ -433,6 +442,20 @@ const UserManager = () => {
             name="email"
             label="Email"
             rules={[{ required: true, type: 'email' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="password"
+            label="Mot de passe"
+            rules={[{ required: true, message: 'Le mot de passe est requis' }]}
+          >
+            <Input.Password />
+          </Form.Item>
+          <Form.Item
+            name="username"
+            label="Nom d'utilisateur"
+            rules={[{ required: true, message: "Le nom d'utilisateur est requis" }]}
           >
             <Input />
           </Form.Item>
@@ -460,7 +483,7 @@ const UserManager = () => {
           <Form.Item
             name="name"
             label="Nom"
-            rules={[{ required: true }]}
+            rules={[{ required: true, message: 'Le nom est requis' }]}
           >
             <Input />
           </Form.Item>
@@ -468,6 +491,26 @@ const UserManager = () => {
             name="email"
             label="Email"
             rules={[{ required: true, type: 'email' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="password"
+            label="Mot de passe"
+            rules={[{ required: true, message: 'Le mot de passe est requis' }]}
+          >
+            <Input.Password />
+          </Form.Item>
+          <Form.Item
+            name="username"
+            label="Nom d'utilisateur"
+            rules={[{ required: true, message: "Le nom d'utilisateur est requis" }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="phone"
+            label="Téléphone"
           >
             <Input />
           </Form.Item>
