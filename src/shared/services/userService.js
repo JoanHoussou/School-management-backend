@@ -59,6 +59,16 @@ const userService = {
       console.error('Erreur lors de la création de l\'utilisateur:', error);
       throw new Error(error.response?.data?.message || 'Échec de la création de l\'utilisateur');
     }
+  },
+
+  // Supprimer un utilisateur
+  deleteUser: async (userId) => {
+    try {
+      await axiosInstance.delete(`/users/${userId}`);
+    } catch (error) {
+      console.error('Erreur lors de la suppression de l\'utilisateur:', error);
+      throw new Error(error.response?.data?.message || 'Échec de la suppression de l\'utilisateur');
+    }
   }
 };
 

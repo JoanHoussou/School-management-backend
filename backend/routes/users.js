@@ -1,7 +1,8 @@
 /* eslint-env node, commonjs */
+/* eslint-disable no-undef */
 const express = require('express');
-const { authenticateJWT, authorizeRoles } = require('../middlewares/auth');
-const User = require('../models/User');
+const { authenticateJWT } = require('../middlewares/auth');
+const User = require('..//models/User');
 
 const router = express.Router();
 
@@ -115,6 +116,19 @@ router.post('/', [authenticateJWT, (req, res, next) => {
       message: 'Erreur lors de la création de l\'utilisateur',
       error: error.message
     });
+  }
+});
+
+// Supprimer un utilisateur
+router.delete('/:id', authenticateJWT, async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+    res.json({ message: 'Utilisateur supprimé avec succès' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur serveur' });
   }
 });
 

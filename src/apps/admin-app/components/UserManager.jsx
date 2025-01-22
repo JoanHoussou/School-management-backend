@@ -277,8 +277,24 @@ const UserManager = () => {
     setIsModalVisible(true);
   };
 
-  const handleDelete = () => {
-    // Logique de suppression
+  const handleDelete = (userId) => {
+    Modal.confirm({
+      title: 'Confirmer la suppression',
+      content: 'Êtes-vous sûr de vouloir supprimer cet utilisateur ?',
+      okText: 'Oui',
+      okType: 'danger',
+      cancelText: 'Non',
+      async onOk() {
+        try {
+          await userService.deleteUser(userId);
+          message.success('Utilisateur supprimé avec succès');
+          loadUsers(); // Recharger la liste des utilisateurs
+        } catch (error) {
+          console.error('Erreur lors de la suppression:', error);
+          message.error('Erreur lors de la suppression de l\'utilisateur');
+        }
+      },
+    });
   };
 
   const handleModalOk = () => {
