@@ -188,9 +188,9 @@ const UserManager = () => {
         key: 'children',
         render: (children) => (
           <>
-            {children.map(child => (
-              <Tag key={child}>{child}</Tag>
-            ))}
+            {usersData.students
+              .filter(student => children.includes(student.key))
+              .map(student => <Tag key={student.key}>{student.name}</Tag>)}
           </>
         ),
       },
@@ -312,7 +312,7 @@ const UserManager = () => {
         key: parent._id,
         name: parent.name,
         email: parent.email,
-        children: parent.children.map(child => child.name),
+        children: parent.children.map(child => child._id),
         status: parent.isActive ? 'actif' : 'inactif'
       }));
 
@@ -605,7 +605,7 @@ const UserManager = () => {
           >
             <Select mode="multiple">
               {usersData.students.map(student => (
-                <Option key={student.key} value={student.name}>{student.name}</Option>
+                <Option key={student.key} value={student.key}>{student.name}</Option>
               ))}
             </Select>
           </Form.Item>

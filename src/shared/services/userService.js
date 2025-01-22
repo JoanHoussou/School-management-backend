@@ -48,6 +48,11 @@ const userService = {
   // Créer un nouvel utilisateur
   createUser: async (userData) => {
     try {
+      // Transformer les données des enfants si nécessaire
+      if (userData.role === 'parent' && userData.children) {
+        userData.children = userData.children.map(child => typeof child === 'string' ? child : child.key);
+      }
+      
       const response = await axiosInstance.post('/users', userData);
       return response.data;
     } catch (error) {
@@ -59,6 +64,11 @@ const userService = {
   // Mettre à jour un utilisateur
   updateUser: async (userId, userData) => {
     try {
+      // Transformer les données des enfants si nécessaire
+      if (userData.role === 'parent' && userData.children) {
+        userData.children = userData.children.map(child => typeof child === 'string' ? child : child.key);
+      }
+
       const response = await axiosInstance.put(`/users/${userId}`, userData);
       return response.data;
     } catch (error) {
