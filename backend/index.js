@@ -9,6 +9,7 @@ const userRoutes = require('./routes/users');
 const academicRoutes = require('./routes/academic');
 const scheduleRoutes = require('./routes/schedule');
 const assignmentRoutes = require('./routes/assignments');
+const dashboardRoutes = require('./routes/dashboard');
 
 // Initialisation de l'application Express
 const app = express();
@@ -43,6 +44,7 @@ app.use('/api/academic', academicRoutes);
 app.use('/api/grades', gradeRoutes);
 app.use('/api/schedule', scheduleRoutes);
 app.use('/api/assignments', assignmentRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Route de test
 app.get('/', (req, res) => {

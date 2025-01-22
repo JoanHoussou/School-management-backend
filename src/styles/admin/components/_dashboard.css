@@ -1,0 +1,195 @@
+/* Layout principal */
+.dashboard-container {
+  padding: var(--spacing-lg);
+  min-height: 100vh;
+  background: white;
+}
+
+.dashboard-header {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Statistiques rapides */
+.stats-row .stat-card {
+  height: 140px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: var(--border-radius-lg);
+  overflow: hidden;
+  transition: var(--transition-base);
+  background: white;
+  border: 1px solid var(--color-border);
+}
+
+.stats-row .stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.attendance-card { border-left: 4px solid var(--color-success); }
+.students-card { border-left: 4px solid var(--color-primary); }
+.teachers-card { border-left: 4px solid var(--color-warning); }
+.requests-card { border-left: 4px solid var(--color-error); }
+
+/* Vue d'ensemble des niveaux */
+.levels-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.levels-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  padding: 0 var(--spacing-xs);
+}
+
+.levels-header .ant-btn {
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.levels-header .ant-btn:disabled {
+  background: var(--color-background);
+  border-color: var(--color-border);
+}
+
+.level-card {
+  height: 100%;
+  background: white;
+  border: 1px solid var(--color-border);
+}
+
+.level-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.classes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.class-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xs);
+}
+
+/* Vue d'ensemble du personnel */
+.staff-card {
+  height: 100%;
+  background: linear-gradient(to bottom, white, var(--color-background));
+}
+
+.staff-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.staff-overview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.staff-section {
+  padding: var(--spacing-md);
+  background: white;
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--card-shadow);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.subjects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--spacing-sm);
+}
+
+/* Performance académique */
+.performance-card {
+  height: 100%;
+}
+
+.performance-header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.performance-content {
+  position: relative;
+  min-height: 400px;
+}
+
+.level-performance {
+  padding: var(--spacing-md) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.level-performance:last-child {
+  border-bottom: none;
+}
+
+.current-level {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.performance-metrics {
+  background: var(--color-background);
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+/* Animations */
+.level-performance.active {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Media Queries */
+@media (max-width: var(--breakpoint-md)) {
+  .dashboard-container {
+    padding: var(--spacing-md);
+  }
+  
+  .subjects-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+}
