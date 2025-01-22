@@ -528,6 +528,49 @@ const UserManager = () => {
           </Form.Item>
         </>
       ),
+      parents: (
+        <>
+          <Form.Item
+            name="name"
+            label="Nom"
+            rules={[{ required: true, message: 'Le nom est requis' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="email"
+            label="Email"
+            rules={[{ required: true, type: 'email' }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="password"
+            label="Mot de passe"
+            rules={[{ required: true, message: 'Le mot de passe est requis' }]}
+          >
+            <Input.Password />
+          </Form.Item>
+          <Form.Item
+            name="username"
+            label="Nom d'utilisateur"
+            rules={[{ required: true, message: "Le nom d'utilisateur est requis" }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="children"
+            label="Enfants"
+            rules={[{ required: true, message: 'Veuillez sélectionner au moins un enfant' }]}
+          >
+            <Select mode="multiple">
+              {users.students.map(student => (
+                <Option key={student.key} value={student.name}>{student.name}</Option>
+              ))}
+            </Select>
+          </Form.Item>
+        </>
+      ),
     };
 
     return formItems[currentUserType] || null;
