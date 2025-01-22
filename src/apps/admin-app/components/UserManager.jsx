@@ -32,7 +32,9 @@ const weekDays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
 
 const UserManager = () => {
   const [usersData, setUsersData] = useState({
-    students: [], teachers: [], parents: []
+    students: [],
+    teachers: [],
+    parents: []
   });
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -54,52 +56,6 @@ const UserManager = () => {
     classes: {}    // { className: { day: { timeSlot: { subject, teacherId } } } }
   });
   const [scheduleView, setScheduleView] = useState('table'); // 'table' ou 'calendar'
-
-  const users = {
-    students: [
-      {
-        key: '1',
-        name: 'Thomas Dubois',
-        email: 'thomas.dubois@email.com',
-        class: '3ème A',
-        status: 'actif',
-        parentEmail: 'parent.dubois@email.com'
-      },
-      {
-        key: '2',
-        name: 'Marie Martin',
-        email: 'marie.martin@email.com',
-        class: '3ème A',
-        status: 'actif',
-        parentEmail: 'parent.martin@email.com'
-      }
-    ],
-    teachers: [
-      {
-        key: '1',
-        name: 'Prof. Martin',
-        email: 'prof.martin@email.com',
-        subjects: ['Mathématiques', 'Physique'],
-        status: 'actif'
-      },
-      {
-        key: '2',
-        name: 'Prof. Dubois',
-        email: 'prof.dubois@email.com',
-        subjects: ['Français'],
-        status: 'actif'
-      }
-    ],
-    parents: [
-      {
-        key: '1',
-        name: 'M. Dubois',
-        email: 'parent.dubois@email.com',
-        children: ['Thomas Dubois'],
-        status: 'actif'
-      }
-    ]
-  };
 
   const columns = {
     students: [
@@ -288,49 +244,39 @@ const UserManager = () => {
         try {
           await userService.deleteUser(userId);
           message.success('Utilisateur supprimé avec succès');
-          loadUsers(); // Recharger la liste des utilisateurs
+          loadUsers();
         } catch (error) {
-          console.error('Erreur lors de la suppression:', error);
-          message.error('Erreur lors de la suppression de l\'utilisateur');
+          message.error('Erreur lors de la suppression : ' + error.message);
         }
       },
     });
   };
 
   const handleModalOk = () => {
-    form.validateFields().then(async () => {
-      const values = form.getFieldsValue();
-      const userData = {
-        ...values,
-        isActive: true,
-        role: currentUserType === 'students' ? 'student' : 
-              currentUserType === 'teachers' ? 'teacher' : 'parent'
-      };
-      
-      // Vérifier si l'utilisateur existe déjà dans les données actuelles
-      const existingUser = [...usersData.students, ...usersData.teachers, ...usersData.parents]
-        .find(user => user.email === values.email || user.username === values.username);
-
-      if (existingUser) {
-        if (existingUser.email === values.email) {
-          message.error('Un utilisateur avec cet email existe déjà');
-        } else {
-          message.error('Un utilisateur avec ce nom d\'utilisateur existe déjà');
-        }
-        return;
-      }
-
+    form.validateFields().then(async (values) => {
       try {
-        await userService.createUser(userData)
-;
-        message.success('Utilisateur créé avec succès');
+        const userData = {
+          ...values,
+          isActive: true,
+          role: currentUserType === 'students' ? 'student' : 
+                currentUserType === 'teachers' ? 'teacher' : 'parent'
+        };
+
+        if (form.getFieldValue('key')) {
+          // Modification d'un utilisateur existant
+          await userService.updateUser(form.getFieldValue('key'), userData);
+          message.success('Utilisateur modifié avec succès');
+        } else {
+          // Création d'un nouvel utilisateur
+          await userService.createUser(userData);
+          message.success('Utilisateur créé avec succès');
+        }
+
         setIsModalVisible(false);
         form.resetFields();
-        loadUsers(); // Recharger la liste des utilisateurs
+        loadUsers();
       } catch (error) {
-        const errorMsg = error.message || 'Une erreur est survenue lors de la création de l\'utilisateur';
-        message.error(errorMsg);
-        console.error('Erreur détaillée:', error);
+        message.error('Erreur : ' + error.message);
       }
     });
   };
@@ -344,12 +290,11 @@ const UserManager = () => {
         userService.getAllParents()
       ]);
 
-      // Formater les données pour correspondre à la structure attendue
       const formattedStudents = students.map(student => ({
         key: student._id,
         name: student.name,
         email: student.email,
-        class: student.class,
+        class: student.class || '',
         status: student.isActive ? 'actif' : 'inactif',
         parentEmail: student.parentEmail
       }));
@@ -366,11 +311,15 @@ const UserManager = () => {
         key: parent._id,
         name: parent.name,
         email: parent.email,
-        children: parent.children || [],
+        children: parent.children.map(child => child.name),
         status: parent.isActive ? 'actif' : 'inactif'
       }));
 
-      setUsersData({ students: formattedStudents, teachers: formattedTeachers, parents: formattedParents });
+      setUsersData({
+        students: formattedStudents,
+        teachers: formattedTeachers,
+        parents: formattedParents
+      });
     } catch (error) {
       message.error('Erreur lors du chargement des utilisateurs: ' + error.message);
     } finally {
@@ -450,7 +399,7 @@ const UserManager = () => {
           if (teacherSchedule.length > 0) {
             const otherClasses = teacherSchedule.filter(c => !c.startsWith(className));
             if (otherClasses.length > 0) {
-              conflicts.push(`${day} ${timeSlot}: ${users.teachers.find(t => t.key === teacherId).name} est déjà occupé`);
+              conflicts.push(`${day} ${timeSlot}: ${usersData.teachers.find(t => t.key === teacherId).name} est déjà occupé`);
             }
           }
         }
@@ -654,7 +603,7 @@ const UserManager = () => {
             rules={[{ required: true, message: 'Veuillez sélectionner au moins un enfant' }]}
           >
             <Select mode="multiple">
-              {users.students.map(student => (
+              {usersData.students.map(student => (
                 <Option key={student.key} value={student.name}>{student.name}</Option>
               ))}
             </Select>
@@ -1090,7 +1039,7 @@ t.subjects && t.subjects.includes(selectedSubject)
                     <Tooltip title={
                       type === 'teacher' 
                         ? `Classes: ${value.join(', ')}` 
-                        : `Prof: ${users.teachers.find(t => t.key === value.teacherId)?.name}`
+                        : `Prof: ${usersData.teachers.find(t => t.key === value.teacherId)?.name}`
                     }>
                       <Badge 
                         status="processing" 
@@ -1159,7 +1108,7 @@ t.subjects && t.subjects.includes(selectedSubject)
                           {departments.flatMap(dept =>
                             dept.subjects.map(subject => (
                               <Select.OptGroup key={`${dept.name}-${subject}`} label={subject}>
-                                {users.teachers
+                                {usersData.teachers
                                   .filter(t => t.subjects.includes(subject))
                                   .map(teacher => (
                                     <Option 
@@ -1201,7 +1150,7 @@ t.subjects && t.subjects.includes(selectedSubject)
         const value = scheduleData?.[day]?.[timeSlot];
         row.push(type === 'teacher' 
           ? (value || []).join(', ')
-          : value ? `${value.subject} (${users.teachers.find(t => t.key === value.teacherId)?.name})` : ''
+          : value ? `${value.subject} (${usersData.teachers.find(t => t.key === value.teacherId)?.name})` : ''
         );
       });
       ws_data.push(row);
@@ -1426,7 +1375,7 @@ t.subjects && t.subjects.includes(selectedSubject)
                           {departments.flatMap(dept =>
                             dept.subjects.map(subject => (
                               <Select.OptGroup key={`${dept.name}-${subject}`} label={subject}>
-                                {users.teachers
+                                {usersData.teachers
                                   .filter(t => t.subjects.includes(subject))
                                   .map(teacher => (
                                     <Option 

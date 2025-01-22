@@ -17,17 +17,6 @@ const userSchema = new mongoose.Schema({
     enum: ['student', 'teacher', 'parent', 'admin', 'staff'],
     required: true
   },
-  phone: {
-    type: String,
-    trim: true
-  },
-  profilePicture: {
-    type: String
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
   name: {
     type: String,
     required: true
@@ -39,6 +28,42 @@ const userSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   },
+  phone: {
+    type: String,
+    trim: true
+  },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
+  // Champs spécifiques aux étudiants
+  class: {
+    type: String,
+    required: function() { 
+      return this.role === 'student';
+    }
+  },
+  parentEmail: {
+    type: String,
+    required: function() {
+      return this.role === 'student';
+    }
+  },
+  // Champs spécifiques aux professeurs
+  subjects: [{
+    type: String,
+    required: function() {
+      return this.role === 'teacher';
+    }
+  }],
+  // Champs spécifiques aux parents
+  children: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: function() {
+      return this.role === 'parent';
+    }
+  }],
   createdAt: {
     type: Date,
     default: Date.now

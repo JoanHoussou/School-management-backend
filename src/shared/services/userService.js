@@ -27,10 +27,6 @@ const userService = {
   getAllStudents: async () => {
     try {
       const response = await axiosInstance.get('/users/students');
-      if (response.data) {
-        // Log pour débogage
-        console.log('Étudiants récupérés:', response.data);
-      }
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des étudiants:', error);
@@ -53,11 +49,21 @@ const userService = {
   createUser: async (userData) => {
     try {
       const response = await axiosInstance.post('/users', userData);
-      console.log('Utilisateur créé:', response.data);
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la création de l\'utilisateur:', error);
       throw new Error(error.response?.data?.message || 'Échec de la création de l\'utilisateur');
+    }
+  },
+
+  // Mettre à jour un utilisateur
+  updateUser: async (userId, userData) => {
+    try {
+      const response = await axiosInstance.put(`/users/${userId}`, userData);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
+      throw new Error(error.response?.data?.message || 'Échec de la mise à jour');
     }
   },
 
@@ -66,8 +72,19 @@ const userService = {
     try {
       await axiosInstance.delete(`/users/${userId}`);
     } catch (error) {
-      console.error('Erreur lors de la suppression de l\'utilisateur:', error);
-      throw new Error(error.response?.data?.message || 'Échec de la suppression de l\'utilisateur');
+      console.error('Erreur lors de la suppression:', error);
+      throw new Error(error.response?.data?.message || 'Échec de la suppression');
+    }
+  },
+
+  // Récupérer un utilisateur par ID
+  getUserById: async (userId) => {
+    try {
+      const response = await axiosInstance.get(`/users/${userId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération:', error);
+      throw new Error(error.response?.data?.message || 'Échec de la récupération');
     }
   }
 };

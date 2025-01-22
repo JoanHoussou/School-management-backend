@@ -1,16 +1,23 @@
 /* eslint-env node, commonjs */
 /* eslint-disable no-undef */
 const express = require('express');
-const { authenticateJWT } = require('../middlewares/auth');
-const User = require('..//models/User');
+const { authenticateJWT, authorizeRoles } = require('../middlewares/auth');
+const User = require('../models/User');
 
 const router = express.Router();
 
+// Middleware pour vérifier si l'utilisateur est admin
+const isAdmin = [
+  authenticateJWT,
+  authorizeRoles('admin')
+];
+
 // Récupérer tous les étudiants
-router.get('/students', authenticateJWT, async (req, res) => {
+router.get('/students', isAdmin, async (req, res) => {
   try {
     const students = await User.find({ role: 'student' })
-      .select('_id name username email');
+      .select('-password')
+      .populate('children', 'name email');
     
     res.json(students);
   } catch (error) {
@@ -23,15 +30,15 @@ router.get('/students', authenticateJWT, async (req, res) => {
 });
 
 // Récupérer tous les professeurs
-router.get('/teachers', authenticateJWT, async (req, res) => {
+router.get('/teachers', isAdmin, async (req, res) => {
   try {
     const teachers = await User.find({ role: 'teacher' })
-      .select('_id name username email');
+      .select('-password');
     
     res.json(teachers);
   } catch (error) {
     console.error('Erreur lors de la récupération des professeurs:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Erreur lors de la récupération des professeurs',
       error: error.message
     });
@@ -39,15 +46,16 @@ router.get('/teachers', authenticateJWT, async (req, res) => {
 });
 
 // Récupérer tous les parents
-router.get('/parents', authenticateJWT, async (req, res) => {
+router.get('/parents', isAdmin, async (req, res) => {
   try {
     const parents = await User.find({ role: 'parent' })
-      .select('_id name username email isActive children');
+      .select('-password')
+      .populate('children', 'name email class');
     
     res.json(parents);
   } catch (error) {
     console.error('Erreur lors de la récupération des parents:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Erreur lors de la récupération des parents',
       error: error.message
     });
@@ -55,16 +63,8 @@ router.get('/parents', authenticateJWT, async (req, res) => {
 });
 
 // Créer un nouvel utilisateur
-router.post('/', [authenticateJWT, (req, res, next) => {
-  console.log('User making request:', req.user);
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Seuls les administrateurs peuvent créer des utilisateurs' });
-  }
-  next();
-}], async (req, res) => {
+router.post('/', isAdmin, async (req, res) => {
   try {
-    console.log('Headers:', req.headers);
-    console.log('Attempting to create user:', req.body);
     const {
       username,
       password,
@@ -72,10 +72,13 @@ router.post('/', [authenticateJWT, (req, res, next) => {
       email,
       name,
       phone,
-      isActive
+      isActive,
+      class: className,
+      subjects,
+      parentEmail,
+      children
     } = req.body;
 
-    console.log('Extracted user data:', { username, role, email, name, isActive });
     // Validation des champs requis
     if (!username || !password || !role || !email || !name) {
       return res.status(400).json({
@@ -98,20 +101,36 @@ router.post('/', [authenticateJWT, (req, res, next) => {
     }
 
     // Création du nouvel utilisateur
-    const newUser = await User.create({
+    const userData = {
       username,
-      password, // Le modèle User hashera automatiquement le mot de passe
+      password,
       role,
       email,
       name,
       phone,
       isActive
-    });
+    };
 
-    res.status(201).json({ message: 'Utilisateur créé avec succès', userId: newUser._id });
+    // Ajout des champs spécifiques selon le rôle
+    if (role === 'student' && className) {
+      userData.class = className;
+      userData.parentEmail = parentEmail;
+    }
+    if (role === 'teacher' && subjects) {
+      userData.subjects = subjects;
+    }
+    if (role === 'parent' && children) {
+      userData.children = children;
+    }
+
+    const newUser = await User.create(userData);
+    const userResponse = await User.findById(newUser._id)
+      .select('-password')
+      .populate('children', 'name email class');
+
+    res.status(201).json(userResponse);
   } catch (error) {
     console.error('Erreur lors de la création de l\'utilisateur:', error);
-    console.error('Stack trace:', error.stack);
     res.status(500).json({
       message: 'Erreur lors de la création de l\'utilisateur',
       error: error.message
@@ -119,16 +138,93 @@ router.post('/', [authenticateJWT, (req, res, next) => {
   }
 });
 
-// Supprimer un utilisateur
-router.delete('/:id', authenticateJWT, async (req, res) => {
+// Mettre à jour un utilisateur
+router.put('/:id', isAdmin, async (req, res) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const {
+      username,
+      password,
+      email,
+      name,
+      phone,
+      isActive,
+      class: className,
+      subjects,
+      parentEmail,
+      children
+    } = req.body;
+
+    const updateData = {
+      username,
+      email,
+      name,
+      phone,
+      isActive
+    };
+
+    // Ajouter les champs conditionnels
+    if (password) {
+      updateData.password = password;
+    }
+    if (className) {
+      updateData.class = className;
+    }
+    if (subjects) {
+      updateData.subjects = subjects;
+    }
+    if (parentEmail) {
+      updateData.parentEmail = parentEmail;
+    }
+    if (children) {
+      updateData.children = children;
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true, runValidators: true }
+    )
+    .select('-password')
+    .populate('children', 'name email class');
+
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour:', error);
+    res.status(500).json({
+      message: 'Erreur lors de la mise à jour de l\'utilisateur',
+      error: error.message
+    });
+  }
+});
+
+// Supprimer un utilisateur
+router.delete('/:id', isAdmin, async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+
+    // Si c'est un parent, mettre à jour les références des enfants
+    if (user.role === 'parent' && user.children?.length > 0) {
+      await User.updateMany(
+        { _id: { $in: user.children } },
+        { $unset: { parentEmail: 1 } }
+      );
+    }
+
     res.json({ message: 'Utilisateur supprimé avec succès' });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur serveur' });
+    console.error('Erreur lors de la suppression:', error);
+    res.status(500).json({
+      message: 'Erreur lors de la suppression de l\'utilisateur',
+      error: error.message
+    });
   }
 });
 
