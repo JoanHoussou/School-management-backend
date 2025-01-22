@@ -1,35 +1,16 @@
-import { Card, Table, Button, Modal, Form, Input, Select, Tag, Space, Tabs, Row, Col, Statistic, Breadcrumb, message, Calendar, Badge, Tooltip } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, Select, Tag, Space, Tabs, Row, Col, Statistic, message } from 'antd';
 import { Typography } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined, BookOutlined, UserOutlined, CalendarOutlined, DownloadOutlined, TableOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined, BookOutlined, UserOutlined } from '@ant-design/icons';
 import { useState, useEffect } from 'react';
 import AppLayout from '../../../shared/components/Layout';
 import { menuItems } from './AdminDashboard';
 import userService from '../../../shared/services/userService';
 import 'moment/locale/fr';
-import { saveAs } from 'file-saver';
-import * as XLSX from 'xlsx';
 import '../../../styles/admin/UserManager.css';
 
 const { Option } = Select;
 const { TabPane } = Tabs;
 const { Title, Text } = Typography;
-
-const TIME_SLOTS = ['8h-10h', '10h-12h', '14h-16h', '16h-18h'];
-
-const timeSlots = [
-  '07:30-08:30',
-  '08:30-09:30',
-  '09:30-10:30',
-  '10:30-11:30',
-  '11:30-12:30',
-  '12:30-13:30',
-  '13:30-14:30',
-  '14:30-15:30',
-  '15:30-16:30',
-  '16:30-17:30'
-];
-
-const weekDays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
 
 const UserManager = () => {
   const [usersData, setUsersData] = useState({
@@ -41,22 +22,6 @@ const UserManager = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [currentUserType, setCurrentUserType] = useState('students');
   const [form] = Form.useForm();
-  const [currentView, setCurrentView] = useState('levels');
-  const [selectedLevel, setSelectedLevel] = useState(null);
-  const [selectedClass, setSelectedClass] = useState(null);
-  const [currentTeacherView, setCurrentTeacherView] = useState('departments');
-  const [selectedDepartment, setSelectedDepartment] = useState(null);
-  const [selectedSubject, setSelectedSubject] = useState(null);
-  const [isScheduleModalVisible, setIsScheduleModalVisible] = useState(false);
-  const [selectedTeacher, setSelectedTeacher] = useState(null);
-  const [scheduleForm] = Form.useForm();
-  const [isClassScheduleModalVisible, setIsClassScheduleModalVisible] = useState(false);
-  const [classScheduleForm] = Form.useForm();
-  const [schedules, setSchedules] = useState({
-    teachers: {},  // { teacherId: { day: { timeSlot: [classes] } } }
-    classes: {}    // { className: { day: { timeSlot: { subject, teacherId } } } }
-  });
-  const [scheduleView, setScheduleView] = useState('table'); // 'table' ou 'calendar'
 
   const columns = {
     students: [
@@ -75,11 +40,9 @@ const UserManager = () => {
         title: 'Classe',
         dataIndex: 'class',
         key: 'class',
-        filters: [
-          { text: '3ème A', value: '3ème A' },
-          { text: '3ème B', value: '3ème B' },
-        ],
-        onFilter: (value, record) => record.class === value,
+        render: (className) => (
+          <Tag color="blue">{className}</Tag>
+        ),
       },
       {
         title: 'Parent',
@@ -132,7 +95,7 @@ const UserManager = () => {
         render: (subjects) => (
           <>
             {subjects.map(subject => (
-              <Tag key={subject}>{subject}</Tag>
+              <Tag key={subject} color="green">{subject}</Tag>
             ))}
           </>
         ),
@@ -155,12 +118,6 @@ const UserManager = () => {
             <Button 
               icon={<EditOutlined />} 
               onClick={() => handleEdit(record)}
-            />
-            <Button
-              icon={<CalendarOutlined />}
-              onClick={() => handleScheduleEdit(record)}
-              type="primary"
-              ghost
             />
             <Button 
               icon={<DeleteOutlined />} 
@@ -264,11 +221,9 @@ const UserManager = () => {
         };
 
         if (form.getFieldValue('key')) {
-          // Modification d'un utilisateur existant
           await userService.updateUser(form.getFieldValue('key'), userData);
           message.success('Utilisateur modifié avec succès');
         } else {
-          // Création d'un nouvel utilisateur
           await userService.createUser(userData);
           message.success('Utilisateur créé avec succès');
         }
@@ -332,141 +287,6 @@ const UserManager = () => {
     loadUsers();
   }, []);
 
-  const handleScheduleEdit = (teacher) => {
-    setSelectedTeacher(teacher);
-    setIsScheduleModalVisible(true);
-    scheduleForm.setFieldsValue(loadSchedule('teacher', teacher.key));
-  };
-
-  const handleClassScheduleEdit = (className) => {
-    setSelectedClass(className);
-    setIsClassScheduleModalVisible(true);
-    classScheduleForm.setFieldsValue(loadSchedule('class', className));
-  };
-
-  const handleTeacherScheduleSave = (values) => {
-    const teacherId = selectedTeacher.key;
-    setSchedules(prev => ({
-      ...prev,
-      teachers: {
-        ...prev.teachers,
-        [teacherId]: values
-      }
-    }));
-
-    // Mettre à jour les emplois du temps des classes concernées
-    Object.entries(values).forEach(([day, slots]) => {
-      Object.entries(slots).forEach(([timeSlot, classes]) => {
-        if (classes) {
-          classes.forEach(classInfo => {
-            const [className, subject] = classInfo.split('-');
-            setSchedules(prev => ({
-              ...prev,
-              classes: {
-                ...prev.classes,
-                [className]: {
-                  ...prev.classes[className],
-                  [day]: {
-                    ...(prev.classes[className]?.[day] || {}),
-                    [timeSlot]: {
-                      subject,
-                      teacherId
-                    }
-                  }
-                }
-              }
-            }));
-          });
-        }
-      });
-    });
-
-    setIsScheduleModalVisible(false);
-    message.success("Emploi du temps mis à jour avec succès");
-  };
-
-  const handleClassScheduleSave = (values) => {
-    const className = selectedClass;
-    
-    // Vérifier les conflits
-    const conflicts = [];
-    Object.entries(values).forEach(([day, slots]) => {
-      Object.entries(slots).forEach(([timeSlot, teacherSubject]) => {
-        if (teacherSubject) {
-          const [teacherId] = teacherSubject.split('-');
-          
-          // Vérifier si le professeur est déjà occupé
-          const teacherSchedule = schedules.teachers[teacherId]?.[day]?.[timeSlot] || [];
-          if (teacherSchedule.length > 0) {
-            const otherClasses = teacherSchedule.filter(c => !c.startsWith(className));
-            if (otherClasses.length > 0) {
-              conflicts.push(`${day} ${timeSlot}: ${usersData.teachers.find(t => t.key === teacherId).name} est déjà occupé`);
-            }
-          }
-        }
-      });
-    });
-
-    if (conflicts.length > 0) {
-      Modal.error({
-        title: 'Conflits détectés',
-        content: (
-          <ul>
-            {conflicts.map((conflict, index) => (
-              <li key={index}>{conflict}</li>
-            ))}
-          </ul>
-        )
-      });
-      return;
-    }
-
-    setSchedules(prev => ({
-      ...prev,
-      classes: {
-        ...prev.classes,
-        [className]: values
-      }
-    }));
-
-    // Mettre à jour les emplois du temps des professeurs concernés
-    Object.entries(values).forEach(([day, slots]) => {
-      Object.entries(slots).forEach(([timeSlot, teacherSubject]) => {
-        if (teacherSubject) {
-          const [teacherId, subject] = teacherSubject.split('-');
-          setSchedules(prev => ({
-            ...prev,
-            teachers: {
-              ...prev.teachers,
-              [teacherId]: {
-                ...prev.teachers[teacherId],
-                [day]: {
-                  ...(prev.teachers[teacherId]?.[day] || {}),
-                  [timeSlot]: [
-                    ...(prev.teachers[teacherId]?.[day]?.[timeSlot] || []).filter(c => !c.startsWith(className)),
-                    `${className}-${subject}`
-                  ]
-                }
-              }
-            }
-          }));
-        }
-      });
-    });
-
-    setIsClassScheduleModalVisible(false);
-    message.success("Emploi du temps mis à jour avec succès");
-  };
-
-  const loadSchedule = (type, id) => {
-    if (type === 'teacher') {
-      return schedules.teachers[id] || {};
-    } else if (type === 'class') {
-      return schedules.classes[id] || {};
-    }
-    return {};
-  };
-
   const renderForm = () => {
     const formItems = {
       students: (
@@ -505,6 +325,12 @@ const UserManager = () => {
             rules={[{ required: true }]}
           >
             <Select>
+              <Option value="6ème A">6ème A</Option>
+              <Option value="6ème B">6ème B</Option>
+              <Option value="5ème A">5ème A</Option>
+              <Option value="5ème B">5ème B</Option>
+              <Option value="4ème A">4ème A</Option>
+              <Option value="4ème B">4ème B</Option>
               <Option value="3ème A">3ème A</Option>
               <Option value="3ème B">3ème B</Option>
             </Select>
@@ -562,8 +388,14 @@ const UserManager = () => {
             <Select mode="multiple">
               <Option value="Mathématiques">Mathématiques</Option>
               <Option value="Français">Français</Option>
-              <Option value="Histoire">Histoire</Option>
-              <Option value="Physique">Physique</Option>
+              <Option value="Histoire-Géographie">Histoire-Géographie</Option>
+              <Option value="Physique-Chimie">Physique-Chimie</Option>
+              <Option value="SVT">SVT</Option>
+              <Option value="Anglais">Anglais</Option>
+              <Option value="Espagnol">Espagnol</Option>
+              <Option value="Arts Plastiques">Arts Plastiques</Option>
+              <Option value="Musique">Musique</Option>
+              <Option value="EPS">EPS</Option>
             </Select>
           </Form.Item>
         </>
@@ -614,558 +446,6 @@ const UserManager = () => {
     };
 
     return formItems[currentUserType] || null;
-  };
-
-  const renderStudentContent = () => {
-    const renderLevels = () => (
-      <div>
-        <Row gutter={[16, 16]}>
-          {levels.map(level => (
-            <Col xs={24} sm={12} md={8} lg={6} key={level.id}>
-              <Card
-                hoverable
-                className="level-card"
-                onClick={() => {
-                  setSelectedLevel(level);
-                  setCurrentView('classes');
-                }}
-              >
-                <Statistic
-                  title={level.name}
-                  value={level.classes.length}
-                  suffix="classes"
-                />
-              </Card>
-            </Col>
-          ))}
-          <Col xs={24} sm={12} md={8} lg={6}>
-            <Card
-              hoverable
-              className="add-level-card"
-              onClick={() => {
-                // Logique pour ajouter un niveau
-                Modal.confirm({
-                  title: 'Ajouter un niveau',
-                  content: (
-                    <Input placeholder="Nom du niveau" />
-                  ),
-                  onOk: () => {
-                    // Logique d'ajout
-                  }
-                });
-              }}
-            >
-              <div className="add-level-content">
-                <PlusOutlined style={{ fontSize: 24 }} />
-                <div>Ajouter un niveau</div>
-              </div>
-            </Card>
-          </Col>
-        </Row>
-      </div>
-    );
-
-    const renderClasses = () => (
-      <div>
-        <Row gutter={[16, 16]}>
-          {selectedLevel.classes.map(className => (
-            <Col xs={24} sm={12} md={8} lg={6} key={className}>
-              <Card
-                hoverable
-                className="class-card"
-              >
-                <Statistic
-                  title={className}
-                  value={usersData.students.filter(s => s.class === className).length}
-                  suffix="élèves"
-                />
-                <Space className="class-actions">
-                  <Button
-                    type="primary"
-                    onClick={() => {
-                      setSelectedClass(className);
-                      setCurrentView('students');
-                    }}
-                  >
-                    Voir les élèves
-                  </Button>
-                  <Button
-                    icon={<CalendarOutlined />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleClassScheduleEdit(className);
-                    }}
-                    type="primary"
-                    ghost
-                  >
-                    Emploi du temps
-                  </Button>
-                </Space>
-              </Card>
-            </Col>
-          ))}
-          <Col xs={24} sm={12} md={8} lg={6}>
-            <Card
-              hoverable
-              className="add-class-card"
-              onClick={() => {
-                Modal.confirm({
-                  title: `Ajouter une classe en ${selectedLevel.name}`,
-                  content: (
-                    <Input placeholder="Nom de la classe" />
-                  ),
-                  onOk: () => {
-                    // Logique d'ajout
-                  }
-                });
-              }}
-            >
-              <div className="add-class-content">
-                <PlusOutlined style={{ fontSize: 24 }} />
-                <div>Ajouter une classe</div>
-              </div>
-            </Card>
-          </Col>
-        </Row>
-      </div>
-    );
-
-    return (
-      <div>
-        <Breadcrumb style={{ marginBottom: 16 }}>
-          <Breadcrumb.Item 
-            onClick={() => {
-              setCurrentView('levels');
-              setSelectedLevel(null);
-              setSelectedClass(null);
-            }}
-            className="breadcrumb-link"
-          >
-            Niveaux
-          </Breadcrumb.Item>
-          {selectedLevel && (
-            <Breadcrumb.Item
-              onClick={() => {
-                setCurrentView('classes');
-                setSelectedClass(null);
-              }}
-              className="breadcrumb-link"
-            >
-              {selectedLevel.name}
-            </Breadcrumb.Item>
-          )}
-          {selectedClass && (
-            <Breadcrumb.Item>{selectedClass}</Breadcrumb.Item>
-          )}
-        </Breadcrumb>
-
-        {currentView === 'levels' && renderLevels()}
-        {currentView === 'classes' && renderClasses()}
-        {currentView === 'students' && (
-          <Table 
-            columns={columns.students} 
-            dataSource={usersData.students.filter(s => s.class === selectedClass)}
-              loading={loading}
-            className="user-table"
-          />
-        )}
-      </div>
-    );
-  };
-
-  const renderTeacherContent = () => {
-    const renderDepartments = () => (
-      <div>
-        <Row gutter={[16, 16]}>
-          {departments.map(dept => (
-            <Col xs={24} sm={12} md={8} key={dept.id}>
-              <Card
-                hoverable
-                className="department-card"
-                onClick={() => {
-                  setSelectedDepartment(dept);
-                  setCurrentTeacherView('subjects');
-                }}
-                style={{ 
-                  borderLeft: `4px solid ${dept.color}`,
-                  height: '180px'
-                }}
-              >
-                <Statistic
-                  title={
-                    <Space direction="vertical" size={4}>
-                      <span style={{ fontSize: '18px', fontWeight: 600 }}>{dept.name}</span>
-                      <span style={{ fontSize: '14px', color: '#666' }}>
-                        {dept.subjects.length} matières
-                      </span>
-                    </Space>
-                  }
-                  value={usersData.teachers.filter(t => 
-                    t.subjects && t.subjects.some(s => dept.subjects.includes(s))
-                  ).length}
-                  suffix="professeurs"
-                />
-                <Button
-                  type="text"
-                  icon={<PlusOutlined />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    Modal.confirm({
-                      title: `Ajouter une matière à ${dept.name}`,
-                      content: (
-                        <Input placeholder="Nom de la matière" />
-                      ),
-                      onOk: (close) => {
-                        // Logique d'ajout de matière
-                        close();
-                      }
-                    });
-                  }}
-                  style={{ position: 'absolute', bottom: '12px', right: '12px' }}
-                >
-                  Ajouter une matière
-                </Button>
-              </Card>
-            </Col>
-          ))}
-          <Col xs={24} sm={12} md={8}>
-            <Card
-              hoverable
-              className="add-department-card"
-              onClick={() => {
-                Modal.confirm({
-                  title: 'Ajouter un département',
-                  content: (
-                    <Form layout="vertical">
-                      <Form.Item
-                        label="Nom du département"
-                        required
-                      >
-                        <Input placeholder="Ex: Sciences" />
-                      </Form.Item>
-                      <Form.Item
-                        label="Couleur"
-                        required
-                      >
-                        <Input type="color" style={{ width: 120 }} />
-                      </Form.Item>
-                    </Form>
-                  ),
-                  onOk: () => {
-                    // Logique d'ajout de département
-                  }
-                });
-              }}
-              style={{ height: '180px' }}
-            >
-              <div className="add-department-content">
-                <PlusOutlined style={{ fontSize: 24 }} />
-                <div>Ajouter un département</div>
-              </div>
-            </Card>
-          </Col>
-        </Row>
-      </div>
-    );
-
-    const renderSubjects = () => (
-      <div>
-        <Row gutter={[16, 16]}>
-          {selectedDepartment.subjects.map(subject => (
-            <Col xs={24} sm={12} md={8} key={subject}>
-              <Card
-                hoverable
-                className="subject-card"
-                onClick={() => {
-                  setCurrentTeacherView('teachers');
-                  setSelectedSubject(subject);
-                }}
-                style={{ 
-                  borderLeft: `4px solid ${selectedDepartment.color}`,
-                  height: '180px'
-                }}
-              >
-                <Statistic
-                  title={
-                    <Space direction="vertical" size={4}>
-                      <span style={{ fontSize: '16px', fontWeight: 500 }}>{subject}</span>
-                    </Space>
-                  }
-                  value={usersData.teachers.filter(t => 
-                    t.subjects && t.subjects.includes(subject)
-                  ).length}
-                  suffix="professeurs"
-                />
-                <div className="subject-teachers">
-                  {usersData.teachers
-                    .filter(t => t.subjects && t.subjects.includes(subject))
-                    .slice(0, 5)
-                    .map(teacher => (
-                      <Tag key={teacher.key}>{teacher.name}</Tag>
-                    ))}
-                </div>
-              </Card>
-            </Col>
-          ))}
-          <Col xs={24} sm={12} md={8}>
-            <Card
-              hoverable
-              className="add-subject-card"
-              onClick={() => {
-                Modal.confirm({
-                  title: `Ajouter une matière dans ${selectedDepartment.name}`,
-                  content: (
-                    <Form layout="vertical">
-                      <Form.Item
-                        label="Nom de la matière"
-                        required
-                      >
-                        <Input placeholder="Ex: Mathématiques" />
-                      </Form.Item>
-                    </Form>
-                  ),
-                  onOk: () => {
-                    // Logique d'ajout de matière
-                  }
-                });
-              }}
-              style={{ height: '180px' }}
-            >
-              <div className="add-subject-content">
-                <PlusOutlined style={{ fontSize: 24 }} />
-                <div>Ajouter une matière</div>
-              </div>
-            </Card>
-          </Col>
-        </Row>
-      </div>
-    );
-
-    return (
-      <div>
-        <Breadcrumb style={{ marginBottom: 16 }}>
-          <Breadcrumb.Item 
-            onClick={() => {
-              setCurrentTeacherView('departments');
-              setSelectedDepartment(null);
-            }}
-            className="breadcrumb-link"
-          >
-            Départements
-          </Breadcrumb.Item>
-          {selectedDepartment && (
-            <Breadcrumb.Item
-              onClick={() => {
-                setCurrentTeacherView('subjects');
-              }}
-              className="breadcrumb-link"
-            >
-              {selectedDepartment.name}
-            </Breadcrumb.Item>
-          )}
-          {currentTeacherView === 'teachers' && (
-            <Breadcrumb.Item>Professeurs</Breadcrumb.Item>
-          )}
-        </Breadcrumb>
-
-        {currentTeacherView === 'departments' && renderDepartments()}
-        {currentTeacherView === 'subjects' && renderSubjects()}
-        {currentTeacherView === 'teachers' && (
-          <Table 
-            columns={columns.teachers}
-            loading={loading}
-            dataSource={usersData.teachers.filter(t => 
-t.subjects && t.subjects.includes(selectedSubject)
-)}
-            className="user-table"
-          />
-
-        )}
-      </div>
-    );
-  };
-
-  const levels = [
-    { id: '1', name: '6ème', classes: ['6ème A', '6ème B', '6ème C'] },
-    { id: '2', name: '5ème', classes: ['5ème A', '5ème B'] },
-    { id: '3', name: '4ème', classes: ['4ème A', '4ème B'] },
-    { id: '4', name: '3ème', classes: ['3ème A', '3ème B'] },
-  ];
-
-  const departments = [
-    {
-      id: '1',
-      name: 'Sciences',
-      subjects: ['Mathématiques', 'Physique-Chimie', 'SVT'],
-      color: '#1890ff'
-    },
-    {
-      id: '2',
-      name: 'Lettres & Sciences Humaines',
-      subjects: ['Français', 'Histoire-Géographie', 'Langues'],
-      color: '#52c41a'
-    },
-    {
-      id: '3',
-      name: 'Arts & Sport',
-      subjects: ['Arts Plastiques', 'Musique', 'EPS'],
-      color: '#722ed1'
-    }
-  ];
-
-  const renderScheduleContent = (type) => {
-    const scheduleData = type === 'teacher' ? 
-      schedules.teachers[selectedTeacher?.key] : 
-      schedules.classes[selectedClass];
-
-    if (scheduleView === 'calendar') {
-      return (
-        <Calendar
-          locale={{
-            lang: {
-              locale: 'fr',
-              month: 'Mois',
-              week: 'Semaine',
-              day: 'Jour',
-            }
-          }}
-          dateCellRender={(date) => {
-            const day = date.format('dddd').toLowerCase();
-            if (!scheduleData?.[day]) return null;
-
-            return (
-              <ul className="schedule-events">
-                {Object.entries(scheduleData[day]).map(([timeSlot, value]) => (
-                  <li key={timeSlot}>
-                    <Tooltip title={
-                      type === 'teacher' 
-                        ? `Classes: ${value.join(', ')}` 
-                        : `Prof: ${usersData.teachers.find(t => t.key === value.teacherId)?.name}`
-                    }>
-                      <Badge 
-                        status="processing" 
-                        text={`${timeSlot}: ${type === 'teacher' ? value.length + ' classes' : value.subject}`} 
-                      />
-                    </Tooltip>
-                  </li>
-                ))}
-              </ul>
-            );
-          }}
-        />
-      );
-    }
-
-    return (
-      <div className="schedule-container">
-        <div className="schedule-grid">
-          <div className="schedule-header">
-            <div className="time-column"></div>
-            {weekDays.map(day => (
-              <div key={day} className="day-column">
-                <div className="text-center">
-                  <div className="font-medium">{day}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="schedule-body">
-            {timeSlots.map(timeSlot => (
-              <div key={timeSlot} className="time-row">
-                <div className="time-label">
-                  <Text type="secondary">{timeSlot}</Text>
-                </div>
-                {weekDays.map(day => (
-                  <div key={`${day}-${timeSlot}`} className="schedule-cell-wrapper">
-                    {type === 'teacher' ? (
-                      <Form.Item
-                        name={[day.toLowerCase(), timeSlot]}
-                        noStyle
-                      >
-                        <Select
-                          mode="multiple"
-                          placeholder="Sélectionner classe(s)"
-                          style={{ width: '100%' }}
-                          options={levels.flatMap(level => 
-                            level.classes.map(className => ({
-                              label: `${className} - ${selectedTeacher?.subjects[0] || ''}`,
-                              value: `${className}-${selectedTeacher?.subjects[0] || ''}`
-                            }))
-                          )}
-                          dropdownMatchSelectWidth={false}
-                        />
-                      </Form.Item>
-                    ) : (
-                      <Form.Item
-                        name={[day.toLowerCase(), timeSlot]}
-                        noStyle
-                      >
-                        <Select
-                          placeholder="Sélectionner cours"
-                          style={{ width: '100%' }}
-                          dropdownMatchSelectWidth={false}
-                        >
-                          {departments.flatMap(dept =>
-                            dept.subjects.map(subject => (
-                              <Select.OptGroup key={`${dept.name}-${subject}`} label={subject}>
-                                {usersData.teachers
-                                  .filter(t => t.subjects.includes(subject))
-                                  .map(teacher => (
-                                    <Option 
-                                      key={`${teacher.key}-${subject}`}
-                                      value={`${teacher.key}-${subject}`}
-                                    >
-                                      {teacher.name}
-                                    </Option>
-                                  ))}
-                              </Select.OptGroup>
-                            ))
-                          )}
-                        </Select>
-                      </Form.Item>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const exportSchedule = (type) => {
-    const scheduleData = type === 'teacher' ? 
-      schedules.teachers[selectedTeacher?.key] : 
-      schedules.classes[selectedClass];
-    
-    const wb = XLSX.utils.book_new();
-    const ws_data = [
-      ['Horaire', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi']
-    ];
-
-    TIME_SLOTS.forEach(timeSlot => {
-      const row = [timeSlot];
-      ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'].forEach(day => {
-        const value = scheduleData?.[day]?.[timeSlot];
-        row.push(type === 'teacher' 
-          ? (value || []).join(', ')
-          : value ? `${value.subject} (${usersData.teachers.find(t => t.key === value.teacherId)?.name})` : ''
-        );
-      });
-      ws_data.push(row);
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet(ws_data);
-    XLSX.utils.book_append_sheet(wb, ws, "Emploi du temps");
-    
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const fileName = type === 'teacher' 
-      ? `EDT_${selectedTeacher.name}.xlsx`
-      : `EDT_${selectedClass}.xlsx`;
-    
-    saveAs(new Blob([wbout], { type: 'application/octet-stream' }), fileName);
   };
 
   return (
@@ -1264,16 +544,46 @@ t.subjects && t.subjects.includes(selectedSubject)
               } 
               key="students"
             >
-              {renderStudentContent()}
+              <Table 
+                columns={columns.students} 
+                dataSource={usersData.students}
+                loading={loading}
+                className="user-table"
+                pagination={{ pageSize: 10 }}
+              />
             </TabPane>
-            <TabPane tab="Enseignants" key="teachers">
-              {renderTeacherContent()}
+            <TabPane 
+              tab={
+                <span>
+                  <BookOutlined />
+                  Enseignants
+                </span>
+              } 
+              key="teachers"
+            >
+              <Table 
+                columns={columns.teachers} 
+                dataSource={usersData.teachers}
+                loading={loading}
+                className="user-table"
+                pagination={{ pageSize: 10 }}
+              />
             </TabPane>
-            <TabPane tab="Parents" key="parents">
+            <TabPane 
+              tab={
+                <span>
+                  <UserOutlined />
+                  Parents
+                </span>
+              } 
+              key="parents"
+            >
               <Table 
                 columns={columns.parents} 
                 dataSource={usersData.parents}
                 loading={loading}
+                className="user-table"
+                pagination={{ pageSize: 10 }}
               />
             </TabPane>
           </Tabs>
@@ -1298,104 +608,6 @@ t.subjects && t.subjects.includes(selectedSubject)
             className="user-form"
           >
             {renderForm()}
-          </Form>
-        </Modal>
-
-        <Modal
-          title={
-            <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-              <Space>
-                <CalendarOutlined />
-                <span>Emploi du temps - {selectedTeacher?.name || selectedClass}</span>
-              </Space>
-              <Space>
-                <Button
-                  icon={scheduleView === 'table' ? <CalendarOutlined /> : <TableOutlined />}
-                  onClick={() => setScheduleView(prev => prev === 'table' ? 'calendar' : 'table')}
-                >
-                  Vue {scheduleView === 'table' ? 'calendrier' : 'tableau'}
-                </Button>
-                <Button
-                  icon={<DownloadOutlined />}
-                  onClick={() => exportSchedule(selectedTeacher ? 'teacher' : 'class')}
-                >
-                  Exporter
-                </Button>
-              </Space>
-            </Space>
-          }
-          open={isScheduleModalVisible}
-          onOk={() => {
-            scheduleForm.validateFields().then(handleTeacherScheduleSave);
-          }}
-          onCancel={() => setIsScheduleModalVisible(false)}
-          width={1000}
-          className="schedule-modal"
-        >
-          {renderScheduleContent(selectedTeacher ? 'teacher' : 'class')}
-        </Modal>
-
-        <Modal
-          title={
-            <Space>
-              <CalendarOutlined />
-              <span>Emploi du temps - {selectedClass}</span>
-            </Space>
-          }
-          open={isClassScheduleModalVisible}
-          onOk={() => {
-            classScheduleForm.validateFields().then(handleClassScheduleSave);
-          }}
-          onCancel={() => setIsClassScheduleModalVisible(false)}
-          width={1000}
-          className="schedule-modal"
-        >
-          <Form
-            form={classScheduleForm}
-            layout="vertical"
-          >
-            {['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'].map(day => (
-              <Card 
-                key={day} 
-                title={day}
-                className="schedule-day-card"
-                size="small"
-                style={{ marginBottom: 16 }}
-              >
-                <Row gutter={[16, 16]}>
-                  {['8h-10h', '10h-12h', '14h-16h', '16h-18h'].map(timeSlot => (
-                    <Col span={6} key={timeSlot}>
-                      <Form.Item
-                        name={[day.toLowerCase(), timeSlot]}
-                        label={timeSlot}
-                      >
-                        <Select
-                          placeholder="Sélectionner cours"
-                          style={{ width: '100%' }}
-                        >
-                          {departments.flatMap(dept =>
-                            dept.subjects.map(subject => (
-                              <Select.OptGroup key={`${dept.name}-${subject}`} label={subject}>
-                                {usersData.teachers
-                                  .filter(t => t.subjects.includes(subject))
-                                  .map(teacher => (
-                                    <Option 
-                                      key={`${teacher.key}-${subject}`}
-                                      value={`${teacher.key}-${subject}`}
-                                    >
-                                      {teacher.name}
-                                    </Option>
-                                  ))}
-                              </Select.OptGroup>
-                            ))
-                          )}
-                        </Select>
-                      </Form.Item>
-                    </Col>
-                  ))}
-                </Row>
-              </Card>
-            ))}
           </Form>
         </Modal>
       </div>
