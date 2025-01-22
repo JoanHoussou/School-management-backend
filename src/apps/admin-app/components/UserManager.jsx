@@ -18,10 +18,41 @@ const UserManager = () => {
     teachers: [],
     parents: []
   });
+  const [filteredData, setFilteredData] = useState({
+    students: [],
+    teachers: [],
+    parents: []
+  });
   const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [currentUserType, setCurrentUserType] = useState('students');
   const [form] = Form.useForm();
+
+  const handleSearch = (value = '') => {
+    const searchLower = value.toLowerCase();
+
+    const filtered = {
+      students: usersData.students.filter(student =>
+        (student.name?.toLowerCase() || '').includes(searchLower) ||
+        (student.email?.toLowerCase() || '').includes(searchLower) ||
+        (student.class?.toLowerCase() || '').includes(searchLower) ||
+        (student.parentEmail?.toLowerCase() || '').includes(searchLower)
+      ),
+      teachers: usersData.teachers.filter(teacher =>
+        (teacher.name?.toLowerCase() || '').includes(searchLower) ||
+        (teacher.email?.toLowerCase() || '').includes(searchLower) ||
+        (teacher.subjects || []).some(subject => 
+          (subject?.toLowerCase() || '').includes(searchLower)
+        )
+      ),
+      parents: usersData.parents.filter(parent =>
+        (parent.name?.toLowerCase() || '').includes(searchLower) ||
+        (parent.email?.toLowerCase() || '').includes(searchLower)
+      )
+    };
+
+    setFilteredData(filtered);
+  };
 
   const columns = {
     students: [
@@ -35,11 +66,13 @@ const UserManager = () => {
         title: 'Email',
         dataIndex: 'email',
         key: 'email',
+        sorter: (a, b) => a.email.localeCompare(b.email),
       },
       {
         title: 'Classe',
         dataIndex: 'class',
         key: 'class',
+        sorter: (a, b) => a.class.localeCompare(b.class),
         render: (className) => (
           <Tag color="blue">{className}</Tag>
         ),
@@ -48,11 +81,13 @@ const UserManager = () => {
         title: 'Parent',
         dataIndex: 'parentEmail',
         key: 'parentEmail',
+        sorter: (a, b) => a.parentEmail.localeCompare(b.parentEmail),
       },
       {
         title: 'Statut',
         dataIndex: 'status',
         key: 'status',
+        sorter: (a, b) => a.status.localeCompare(b.status),
         render: (status) => (
           <Tag color={status === 'actif' ? 'green' : 'red'}>
             {status}
@@ -82,16 +117,19 @@ const UserManager = () => {
         title: 'Nom',
         dataIndex: 'name',
         key: 'name',
+        sorter: (a, b) => a.name.localeCompare(b.name),
       },
       {
         title: 'Email',
         dataIndex: 'email',
         key: 'email',
+        sorter: (a, b) => a.email.localeCompare(b.email),
       },
       {
         title: 'Matières',
         dataIndex: 'subjects',
         key: 'subjects',
+        sorter: (a, b) => a.subjects[0]?.localeCompare(b.subjects[0] || ''),
         render: (subjects) => (
           <>
             {subjects.map(subject => (
@@ -104,6 +142,7 @@ const UserManager = () => {
         title: 'Statut',
         dataIndex: 'status',
         key: 'status',
+        sorter: (a, b) => a.status.localeCompare(b.status),
         render: (status) => (
           <Tag color={status === 'actif' ? 'green' : 'red'}>
             {status}
@@ -133,11 +172,13 @@ const UserManager = () => {
         title: 'Nom',
         dataIndex: 'name',
         key: 'name',
+        sorter: (a, b) => a.name.localeCompare(b.name),
       },
       {
         title: 'Email',
         dataIndex: 'email',
         key: 'email',
+        sorter: (a, b) => a.email.localeCompare(b.email),
       },
       {
         title: 'Enfants',
@@ -155,6 +196,7 @@ const UserManager = () => {
         title: 'Statut',
         dataIndex: 'status',
         key: 'status',
+        sorter: (a, b) => a.status.localeCompare(b.status),
         render: (status) => (
           <Tag color={status === 'actif' ? 'green' : 'red'}>
             {status}
@@ -286,6 +328,10 @@ const UserManager = () => {
   useEffect(() => {
     loadUsers();
   }, []);
+
+  useEffect(() => {
+    setFilteredData(usersData);
+  }, [usersData]);
 
   const renderForm = () => {
     const formItems = {
@@ -532,6 +578,9 @@ const UserManager = () => {
                 placeholder="Rechercher..."
                 style={{ width: 250 }}
                 className="search-input"
+                allowClear
+                onSearch={handleSearch}
+                onChange={(e) => handleSearch(e.target.value)}
               />
             }
           >
@@ -546,7 +595,7 @@ const UserManager = () => {
             >
               <Table 
                 columns={columns.students} 
-                dataSource={usersData.students}
+                dataSource={filteredData.students}
                 loading={loading}
                 className="user-table"
                 pagination={{ pageSize: 10 }}
@@ -563,7 +612,7 @@ const UserManager = () => {
             >
               <Table 
                 columns={columns.teachers} 
-                dataSource={usersData.teachers}
+                dataSource={filteredData.teachers}
                 loading={loading}
                 className="user-table"
                 pagination={{ pageSize: 10 }}
@@ -580,7 +629,7 @@ const UserManager = () => {
             >
               <Table 
                 columns={columns.parents} 
-                dataSource={usersData.parents}
+                dataSource={filteredData.parents}
                 loading={loading}
                 className="user-table"
                 pagination={{ pageSize: 10 }}
