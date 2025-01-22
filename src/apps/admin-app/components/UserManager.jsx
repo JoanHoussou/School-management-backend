@@ -1,7 +1,7 @@
 import { Card, Table, Button, Modal, Form, Input, Select, Tag, Space, Tabs, Row, Col, Statistic, Breadcrumb, message, Calendar, Badge, Tooltip } from 'antd';
 import { Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined, BookOutlined, UserOutlined, CalendarOutlined, DownloadOutlined, TableOutlined } from '@ant-design/icons';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import AppLayout from '../../../shared/components/Layout';
 import { menuItems } from './AdminDashboard';
 import userService from '../../../shared/services/userService';
@@ -31,6 +31,10 @@ const timeSlots = [
 const weekDays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'];
 
 const UserManager = () => {
+  const [usersData, setUsersData] = useState({
+    students: [], teachers: [], parents: []
+  });
+  const [loading, setLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [currentUserType, setCurrentUserType] = useState('students');
   const [form] = Form.useForm();
@@ -278,7 +282,7 @@ const UserManager = () => {
   };
 
   const handleModalOk = () => {
-    form.validateFields().then(() => {
+    form.validateFields().then(async () => {
       const values = form.getFieldsValue();
       const userData = {
         ...values,
@@ -286,11 +290,81 @@ const UserManager = () => {
         role: currentUserType === 'students' ? 'student' : 
               currentUserType === 'teachers' ? 'teacher' : 'parent'
       };
-      userService.createUser(userData)
-        .then(() => setIsModalVisible(false))
-        .catch(error => message.error('Erreur lors de la création: ' + error.message));
+      
+      // Vérifier si l'utilisateur existe déjà dans les données actuelles
+      const existingUser = [...usersData.students, ...usersData.teachers, ...usersData.parents]
+        .find(user => user.email === values.email || user.username === values.username);
+
+      if (existingUser) {
+        if (existingUser.email === values.email) {
+          message.error('Un utilisateur avec cet email existe déjà');
+        } else {
+          message.error('Un utilisateur avec ce nom d\'utilisateur existe déjà');
+        }
+        return;
+      }
+
+      try {
+        await userService.createUser(userData)
+;
+        message.success('Utilisateur créé avec succès');
+        setIsModalVisible(false);
+        form.resetFields();
+        loadUsers(); // Recharger la liste des utilisateurs
+      } catch (error) {
+        const errorMsg = error.message || 'Une erreur est survenue lors de la création de l\'utilisateur';
+        message.error(errorMsg);
+        console.error('Erreur détaillée:', error);
+      }
     });
   };
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const [students, teachers, parents] = await Promise.all([
+        userService.getAllStudents(),
+        userService.getAllTeachers(),
+        userService.getAllParents()
+      ]);
+
+      // Formater les données pour correspondre à la structure attendue
+      const formattedStudents = students.map(student => ({
+        key: student._id,
+        name: student.name,
+        email: student.email,
+        class: student.class,
+        status: student.isActive ? 'actif' : 'inactif',
+        parentEmail: student.parentEmail
+      }));
+
+      const formattedTeachers = teachers.map(teacher => ({
+        key: teacher._id,
+        name: teacher.name,
+        email: teacher.email,
+        subjects: teacher.subjects || [],
+        status: teacher.isActive ? 'actif' : 'inactif'
+      }));
+
+      const formattedParents = parents.map(parent => ({
+        key: parent._id,
+        name: parent.name,
+        email: parent.email,
+        children: parent.children || [],
+        status: parent.isActive ? 'actif' : 'inactif'
+      }));
+
+      setUsersData({ students: formattedStudents, teachers: formattedTeachers, parents: formattedParents });
+    } catch (error) {
+      message.error('Erreur lors du chargement des utilisateurs: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
 
   const handleScheduleEdit = (teacher) => {
     setSelectedTeacher(teacher);
@@ -636,7 +710,7 @@ const UserManager = () => {
               >
                 <Statistic
                   title={className}
-                  value={users.students.filter(s => s.class === className).length}
+                  value={usersData.students.filter(s => s.class === className).length}
                   suffix="élèves"
                 />
                 <Space className="class-actions">
@@ -724,7 +798,8 @@ const UserManager = () => {
         {currentView === 'students' && (
           <Table 
             columns={columns.students} 
-            dataSource={users.students.filter(s => s.class === selectedClass)}
+            dataSource={usersData.students.filter(s => s.class === selectedClass)}
+              loading={loading}
             className="user-table"
           />
         )}
@@ -759,8 +834,8 @@ const UserManager = () => {
                       </span>
                     </Space>
                   }
-                  value={users.teachers.filter(t => 
-                    t.subjects.some(s => dept.subjects.includes(s))
+                  value={usersData.teachers.filter(t => 
+                    t.subjects && t.subjects.some(s => dept.subjects.includes(s))
                   ).length}
                   suffix="professeurs"
                 />
@@ -850,15 +925,15 @@ const UserManager = () => {
                       <span style={{ fontSize: '16px', fontWeight: 500 }}>{subject}</span>
                     </Space>
                   }
-                  value={users.teachers.filter(t => 
-                    t.subjects.includes(subject)
+                  value={usersData.teachers.filter(t => 
+                    t.subjects && t.subjects.includes(subject)
                   ).length}
                   suffix="professeurs"
                 />
                 <div className="subject-teachers">
-                  {users.teachers
-                    .filter(t => t.subjects.includes(subject))
-                    .slice(0, 3)
+                  {usersData.teachers
+                    .filter(t => t.subjects && t.subjects.includes(subject))
+                    .slice(0, 5)
                     .map(teacher => (
                       <Tag key={teacher.key}>{teacher.name}</Tag>
                     ))}
@@ -932,11 +1007,13 @@ const UserManager = () => {
         {currentTeacherView === 'teachers' && (
           <Table 
             columns={columns.teachers}
-            dataSource={users.teachers.filter(t => 
-              t.subjects.includes(selectedSubject)
-            )}
+            loading={loading}
+            dataSource={usersData.teachers.filter(t => 
+t.subjects && t.subjects.includes(selectedSubject)
+)}
             className="user-table"
           />
+
         )}
       </div>
     );
@@ -1132,7 +1209,7 @@ const UserManager = () => {
           <div className="title-section">
             <Title level={2}>Gestion des utilisateurs</Title>
             <Text type="secondary">
-              {users.students.length + users.teachers.length + users.parents.length} utilisateurs au total
+              {usersData.students.length + usersData.teachers.length + usersData.parents.length} utilisateurs au total
             </Text>
           </div>
           <Space>
@@ -1161,10 +1238,10 @@ const UserManager = () => {
             <Card className="stat-card students-stat">
               <Statistic
                 title={<Space><TeamOutlined /> Élèves</Space>}
-                value={users.students.length}
+                value={usersData.students.length}
                 suffix={
                   <Tag color="blue">
-                    {users.students.filter(u => u.status === 'actif').length} actifs
+                    {usersData.students.filter(u => u.status === 'actif').length} actifs
                   </Tag>
                 }
               />
@@ -1174,10 +1251,10 @@ const UserManager = () => {
             <Card className="stat-card teachers-stat">
               <Statistic
                 title={<Space><BookOutlined /> Enseignants</Space>}
-                value={users.teachers.length}
+                value={usersData.teachers.length}
                 suffix={
                   <Tag color="green">
-                    {users.teachers.filter(u => u.status === 'actif').length} actifs
+                    {usersData.teachers.filter(u => u.status === 'actif').length} actifs
                   </Tag>
                 }
               />
@@ -1187,10 +1264,10 @@ const UserManager = () => {
             <Card className="stat-card parents-stat">
               <Statistic
                 title={<Space><UserOutlined /> Parents</Space>}
-                value={users.parents.length}
+                value={usersData.parents.length}
                 suffix={
                   <Tag color="purple">
-                    {users.parents.filter(u => u.status === 'actif').length} actifs
+                    {usersData.parents.filter(u => u.status === 'actif').length} actifs
                   </Tag>
                 }
               />
@@ -1229,7 +1306,8 @@ const UserManager = () => {
             <TabPane tab="Parents" key="parents">
               <Table 
                 columns={columns.parents} 
-                dataSource={users.parents}
+                dataSource={usersData.parents}
+                loading={loading}
               />
             </TabPane>
           </Tabs>

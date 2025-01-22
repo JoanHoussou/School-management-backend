@@ -1,6 +1,17 @@
 import axiosInstance from './axiosConfig';
 
 const userService = {
+  // Récupérer tous les utilisateurs
+  getAllUsers: async () => {
+    try {
+      const response = await axiosInstance.get('/users');
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des utilisateurs:', error);
+      throw new Error(error.response?.data?.message || 'Échec de la récupération des utilisateurs');
+    }
+  },
+
   // Récupérer tous les professeurs
   getAllTeachers: async () => {
     try {
@@ -24,6 +35,17 @@ const userService = {
     } catch (error) {
       console.error('Erreur lors de la récupération des étudiants:', error);
       throw new Error(error.response?.data?.message || 'Échec de la récupération des étudiants');
+    }
+  },
+
+  // Récupérer tous les parents
+  getAllParents: async () => {
+    try {
+      const response = await axiosInstance.get('/users/parents');
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des parents:', error);
+      throw new Error(error.response?.data?.message || 'Échec de la récupération des parents');
     }
   },
 

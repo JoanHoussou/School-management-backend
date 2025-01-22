@@ -37,6 +37,22 @@ router.get('/teachers', authenticateJWT, async (req, res) => {
   }
 });
 
+// Récupérer tous les parents
+router.get('/parents', authenticateJWT, async (req, res) => {
+  try {
+    const parents = await User.find({ role: 'parent' })
+      .select('_id name username email isActive children');
+    
+    res.json(parents);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des parents:', error);
+    res.status(500).json({ 
+      message: 'Erreur lors de la récupération des parents',
+      error: error.message
+    });
+  }
+});
+
 // Créer un nouvel utilisateur
 router.post('/', [authenticateJWT, (req, res, next) => {
   console.log('User making request:', req.user);
