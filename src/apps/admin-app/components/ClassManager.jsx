@@ -27,6 +27,7 @@ const ClassManager = () => {
   const fetchLevels = async () => {
     try {
       const levelsData = await classService.getLevels();
+      console.log('Niveaux reçus:', levelsData);
       setLevels(levelsData);
     } catch (error) {
       console.error('Erreur lors de la récupération des niveaux:', error);
@@ -92,9 +93,14 @@ const ClassManager = () => {
       dataIndex: 'level',
       key: 'level',
       filters: levels.map(level => ({
-        text: level.replace('eme', 'ème').replace('ere', 'ère'),
+        text: level.displayName,
         value: level
+.name
       })),
+      render: (level) => {
+        const levelObj = levels.find(l => l.name === level);
+        return levelObj ? levelObj.displayName : level;
+      },
       onFilter: (value, record) => record.level === value,
     },
     {
@@ -248,7 +254,7 @@ const ClassManager = () => {
       };
 
       // Validation du niveau
-      if (!levels.includes(normalizedData.level)) {
+      if (!levels.some(level => level.name === normalizedData.level)) {
         throw new Error('Le niveau de la classe est invalide');
       }
 
@@ -294,7 +300,10 @@ const ClassManager = () => {
           <Col span={6}>
             <Statistic 
               title="Niveau"
-              value={selectedClass.level}
+              value={
+                levels.find(l => l.name === selectedClass.level)?.displayName ||
+                selectedClass.level
+              }
             />
           </Col>
           <Col span={6}>
@@ -367,8 +376,8 @@ const ClassManager = () => {
             >
               <Select loading={!levels.length}>
                 {levels.map(level => (
-                  <Option key={level} value={level}>
-                    {level.replace('eme', 'ème').replace('ere', 'ère')}
+                  <Option key={level.name} value={level.name}>
+                    {level.displayName}
                   </Option>
                 ))}
               </Select>

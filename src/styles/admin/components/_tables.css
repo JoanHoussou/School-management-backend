@@ -1,0 +1,38 @@
+/* Styles de base pour les tableaux */
+.user-table {
+  margin-top: var(--spacing-md);
+}
+
+.user-table .ant-table-thead > tr > th {
+  background: var(--color-background);
+  font-weight: 600;
+}
+
+/* Composants de recherche et filtres */
+.search-input {
+  margin-left: var(--spacing-md);
+}
+
+.filter-select {
+  min-width: 120px;
+}
+
+/* Navigation par onglets */
+.user-tabs .ant-tabs-nav {
+  margin-bottom: var(--spacing-md);
+}
+
+/* Boutons d'action */
+.add-button {
+  border-radius: var(--border-radius-sm);
+}
+
+/* Liens de navigation */
+.breadcrumb-link {
+  cursor: pointer;
+  color: var(--color-primary);
+}
+
+.breadcrumb-link:hover {
+  text-decoration: underline;
+}

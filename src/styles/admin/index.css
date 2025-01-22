@@ -1,0 +1,40 @@
+/* Variables et thèmes */
+@import './themes/_variables.css';
+
+/* Composants */
+@import './components/_layout.css';
+@import './components/_cards.css';
+@import './components/_tables.css';
+@import './components/_modals.css';
+@import './components/_schedule.css';
+
+/* Utilitaires globaux */
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Reset des marges pour les éléments de formulaire Ant Design */
+.ant-form-item:last-child {
+  margin-bottom: 0;
+}
+
+/* Animations globales */
+.fade-enter {
+  opacity: 0;
+}
+
+.fade-enter-active {
+  opacity: 1;
+  transition: opacity var(--transition-base);
+}
+
+.fade-exit {
+  opacity: 1;
+}
+
+.fade-exit-active {
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}

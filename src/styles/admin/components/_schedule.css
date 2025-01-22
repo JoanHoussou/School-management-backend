@@ -1,0 +1,86 @@
+/* Conteneur principal du planning */
+.schedule-container {
+  overflow-x: auto;
+}
+
+.schedule-grid {
+  min-width: 800px;
+}
+
+/* En-tête du planning */
+.schedule-header {
+  display: grid;
+  grid-template-columns: 100px repeat(5, 1fr);
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--spacing-md) 0;
+}
+
+/* Corps du planning */
+.schedule-body {
+  position: relative;
+}
+
+.time-row {
+  display: grid;
+  grid-template-columns: 100px repeat(5, 1fr);
+  min-height: 80px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.time-label {
+  padding: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--color-border);
+}
+
+.schedule-cell-wrapper {
+  position: relative;
+  border-right: 1px solid var(--color-border);
+  padding: var(--spacing-xs);
+}
+
+.day-column {
+  padding: var(--spacing-xs);
+  text-align: center;
+}
+
+/* Liste des événements */
+.schedule-events {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.schedule-events li {
+  margin-bottom: var(--spacing-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 12px;
+}
+
+/* Styles du calendrier */
+.ant-picker-calendar-full .ant-picker-panel {
+  background-color: white;
+  border-radius: var(--border-radius-md);
+}
+
+.ant-picker-calendar-full .ant-picker-cell {
+  padding: var(--spacing-xs) var(--spacing-xs);
+}
+
+.ant-picker-calendar-full .ant-picker-calendar-date-content {
+  height: 80px;
+  overflow-y: auto;
+}
+
+/* Styles des formulaires dans les cellules */
+.schedule-cell-wrapper .ant-select {
+  width: 100%;
+}
+
+.schedule-cell-wrapper .ant-form-item {
+  margin-bottom: 0;
+}

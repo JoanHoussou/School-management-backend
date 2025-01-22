@@ -1,0 +1,158 @@
+/* Styles de base des cartes */
+.stat-card {
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--card-shadow);
+  transition: var(--transition-base);
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.main-card {
+  margin-top: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--card-shadow);
+}
+
+/* Styles des bordures */
+.card-bordered-left {
+  border-left-width: 4px;
+  border-left-style: solid;
+}
+
+.card-students {
+  border-left-color: var(--color-primary);
+}
+
+.card-teachers {
+  border-left-color: var(--color-success);
+}
+
+.card-parents {
+  border-left-color: var(--color-purple);
+}
+
+/* Effets de survol */
+.card-hover {
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--card-shadow-hover);
+}
+
+/* Cartes de niveau et de classe */
+.level-card, .class-card, .add-level-card, .add-class-card {
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition-base);
+}
+
+.level-card:hover, .class-card:hover {
+  transform: translateY(-4px);
+}
+
+.add-level-content, .add-class-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-lg);
+  color: var(--color-primary);
+}
+
+/* Cartes de département et de matière */
+.department-card, .subject-card {
+  text-align: left;
+  cursor: pointer;
+  transition: var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.department-card:hover, .subject-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.subject-teachers {
+  margin-top: var(--spacing-sm);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.subject-teachers .ant-tag {
+  margin: 0;
+}
+
+/* Cartes d'ajout */
+.add-department-card, .add-subject-card {
+  border: 2px dashed var(--color-border);
+  background-color: var(--color-background);
+  transition: var(--transition-base);
+}
+
+.add-department-card:hover, .add-subject-card:hover {
+  border-color: var(--color-primary);
+  background-color: #f0f5ff;
+}
+
+.add-department-content, .add-subject-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  color: var(--color-primary);
+}
+
+/* Styles spécifiques pour les cartes */
+.department-card .ant-statistic,
+.subject-card .ant-statistic {
+  margin-bottom: var(--spacing-lg);
+}
+
+.subject-card .subject-teachers {
+  position: absolute;
+  bottom: var(--spacing-sm);
+  left: var(--spacing-sm);
+  right: var(--spacing-sm);
+}
+
+.department-card .ant-btn-text {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.department-card:hover .ant-btn-text {
+  opacity: 1;
+}
+
+/* Styles spécifiques pour les cartes de classe */
+.class-card {
+  height: 180px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.class-actions {
+  position: absolute;
+  bottom: var(--spacing-sm);
+  left: var(--spacing-sm);
+  right: var(--spacing-sm);
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-xs);
+}
+
+.class-card .ant-statistic {
+  margin-bottom: 48px;
+  text-align: center;
+}

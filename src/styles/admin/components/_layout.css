@@ -1,0 +1,39 @@
+/* Conteneurs */
+.user-manager-container {
+  padding: var(--spacing-lg);
+}
+
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+}
+
+.title-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+/* Utils */
+.text-center {
+  text-align: center;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+/* Media Queries */
+@media (max-width: var(--breakpoint-md)) {
+  .user-manager-container {
+    padding: var(--spacing-md);
+  }
+
+  .header-section {
+    flex-direction: column;
+    gap: var(--spacing-md);
+    align-items: flex-start;
+  }
+}

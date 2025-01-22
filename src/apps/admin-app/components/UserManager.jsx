@@ -6,7 +6,7 @@ import AppLayout from '../../../shared/components/Layout';
 import { menuItems } from './AdminDashboard';
 import userService from '../../../shared/services/userService';
 import 'moment/locale/fr';
-import '../../../styles/admin/UserManager.css';
+import '../../../styles/admin/index.css';
 
 const { Option } = Select;
 const { TabPane } = Tabs;
