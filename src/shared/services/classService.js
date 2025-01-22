@@ -8,69 +8,92 @@ const classService = {
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des classes:', error);
-      throw new Error(error.response?.data?.message || 'Échec de la récupération des classes');
+      throw error;
     }
   },
 
   // Récupérer une classe spécifique
-  getClassById: async (classId) => {
+  getClassById: async (id) => {
     try {
-      const response = await axiosInstance.get(`/classes/${classId}`);
+      const response = await axiosInstance.get(`/classes/${id}`);
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération de la classe:', error);
-      throw new Error(error.response?.data?.message || 'Échec de la récupération de la classe');
+      throw error;
     }
   },
 
   // Créer une nouvelle classe
   createClass: async (classData) => {
     try {
-      console.log('Envoi des données de classe:', classData);
       const response = await axiosInstance.post('/classes', classData);
-      console.log('Réponse du serveur:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Erreur détaillée:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        config: error.config
-      });
-      throw new Error(error.response?.data?.message || error.message || 'Échec de la création de la classe');
+      console.error('Erreur lors de la création de la classe:', error);
+      throw error;
     }
   },
 
   // Mettre à jour une classe existante
-  updateClass: async (classId, classData) => {
+  updateClass: async (id, classData) => {
     try {
-      const response = await axiosInstance.put(`/classes/${classId}`, classData);
+      const response = await axiosInstance.put(`/classes/${id}`, classData);
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la mise à jour de la classe:', error);
-      throw new Error(error.response?.data?.message || 'Échec de la mise à jour de la classe');
+      throw error;
     }
   },
 
   // Supprimer une classe
-  deleteClass: async (classId) => {
+  deleteClass: async (id) => {
     try {
-      const response = await axiosInstance.delete(`/classes/${classId}`);
+      const response = await axiosInstance.delete(`/classes/${id}`);
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la suppression de la classe:', error);
-      throw new Error(error.response?.data?.message || 'Échec de la suppression de la classe');
+      throw error;
     }
   },
 
   // Récupérer tous les niveaux disponibles
   getLevels: async () => {
     try {
-      const response = await axiosInstance.get('/classes/config/levels');
+      const response = await axiosInstance.get('/academic/levels');
       return response.data;
     } catch (error) {
       console.error('Erreur lors de la récupération des niveaux:', error);
-      throw error.response?.data || error.message;
+      throw error;
+    }
+  },
+
+  createLevel: async (levelData) => {
+    try {
+      const response = await axiosInstance.post('/academic/levels', levelData);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la création du niveau:', error);
+      throw error;
+    }
+  },
+
+  updateLevel: async (id, levelData) => {
+    try {
+      const response = await axiosInstance.put(`/academic/levels/${id}`, levelData);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du niveau:', error);
+      throw error;
+    }
+  },
+
+  deleteLevel: async (id) => {
+    try {
+      const response = await axiosInstance.delete(`/academic/levels/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Erreur lors de la suppression du niveau:', error);
+      throw error;
     }
   }
 };

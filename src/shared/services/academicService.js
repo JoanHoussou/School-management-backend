@@ -4,7 +4,7 @@ import axiosInstance from './axiosConfig';
 // Services pour les matières
 const getAllSubjects = async () => {
   try {
-    const response = await axiosInstance.get('/subjects');
+    const response = await axiosInstance.get('/academic/subjects');
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
@@ -13,7 +13,7 @@ const getAllSubjects = async () => {
 
 const createSubject = async (subjectData) => {
   try {
-    const response = await axiosInstance.post('/subjects', subjectData);
+    const response = await axiosInstance.post('/academic/subjects', subjectData);
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
@@ -22,7 +22,7 @@ const createSubject = async (subjectData) => {
 
 const updateSubject = async (id, subjectData) => {
   try {
-    const response = await axiosInstance.put(`/subjects/${id}`, subjectData);
+    const response = await axiosInstance.put(`/academic/subjects/${id}`, subjectData);
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
@@ -32,7 +32,7 @@ const updateSubject = async (id, subjectData) => {
 // Services pour le programme scolaire
 const getCurriculum = async (filters = {}) => {
   try {
-    const response = await axiosInstance.get('/curriculum', { params: filters });
+    const response = await axiosInstance.get('/academic/curriculum', { params: filters });
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
@@ -41,7 +41,7 @@ const getCurriculum = async (filters = {}) => {
 
 const createCurriculum = async (curriculumData) => {
   try {
-    const response = await axiosInstance.post('/curriculum', curriculumData);
+    const response = await axiosInstance.post('/academic/curriculum', curriculumData);
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
@@ -50,7 +50,7 @@ const createCurriculum = async (curriculumData) => {
 
 const updateCurriculum = async (id, curriculumData) => {
   try {
-    const response = await axiosInstance.put(`/curriculum/${id}`, curriculumData);
+    const response = await axiosInstance.put(`/academic/curriculum/${id}`, curriculumData);
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
@@ -59,7 +59,7 @@ const updateCurriculum = async (id, curriculumData) => {
 
 const deleteSubject = async (id) => {
   try {
-    const response = await axiosInstance.delete(`/subjects/${id}`);
+    const response = await axiosInstance.delete(`/academic/subjects/${id}`);
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;
@@ -68,7 +68,7 @@ const deleteSubject = async (id) => {
 
 const deleteCurriculum = async (id) => {
   try {
-    const response = await axiosInstance.delete(`/curriculum/${id}`);
+    const response = await axiosInstance.delete(`/academic/curriculum/${id}`);
     return response.data;
   } catch (error) {
     throw error.response?.data || error.message;

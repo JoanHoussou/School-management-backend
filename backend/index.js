@@ -39,7 +39,7 @@ const gradeRoutes = require('./routes/grades');
 app.use('/api/auth', authRoutes);
 app.use('/api/classes', classRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api', academicRoutes);
+app.use('/api/academic', academicRoutes);
 app.use('/api/grades', gradeRoutes);
 app.use('/api/schedule', scheduleRoutes);
 app.use('/api/assignments', assignmentRoutes);

@@ -230,7 +230,6 @@ const ClassManager = () => {
 
   const handleModalOk = async () => {
     try {
-      // Validation des champs du formulaire
       const values = await classForm.validateFields();
       console.log('Valeurs du formulaire brutes:', values);
 
@@ -245,67 +244,30 @@ const ClassManager = () => {
         level: values.level,
         mainTeacher: values.mainTeacher,
         capacity: parseInt(values.capacity, 10),
-        academicYear: values.academicYear || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)
+        academicYear: values.academicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`
       };
 
-      // Validation des données normalisées
-      if (isNaN(normalizedData.capacity) || normalizedData.capacity <= 0) {
-        throw new Error('La capacité doit être un nombre positif');
-      }
-
-      if (!normalizedData.name || normalizedData.name.length < 2) {
-        throw new Error('Le nom de la classe doit contenir au moins 2 caractères');
-      }
-
-      if (!normalizedData.level || !['6eme', '5eme', '4eme', '3eme'].includes(normalizedData.level)) {
+      // Validation du niveau
+      if (!levels.includes(normalizedData.level)) {
         throw new Error('Le niveau de la classe est invalide');
       }
 
-      console.log('Données normalisées à envoyer au serveur:', normalizedData);
-
-      // Envoi des données au serveur
-      let response;
       if (values._id) {
         // Mise à jour d'une classe existante
-        response = await classService.updateClass(values._id, normalizedData);
-        console.log('Réponse de mise à jour:', response);
-        message.success('Classe mise à jour avec succès');
+        await classService.updateClass(values._id, normalizedData);
+        message.success('Classe modifiée avec succès');
       } else {
         // Création d'une nouvelle classe
-        response = await classService.createClass(normalizedData);
-        console.log('Réponse de création:', response);
+        await classService.createClass(normalizedData);
         message.success('Classe créée avec succès');
       }
 
-      // Fermeture du modal et rafraîchissement des données
       setIsModalVisible(false);
-      await fetchClasses();
-      
-      // Réinitialisation du formulaire
       classForm.resetFields();
+      fetchClasses();
     } catch (error) {
       console.error('Erreur complète:', error);
-      
-      // Gestion des erreurs spécifiques
-      if (error.isFieldError) {
-        return; // Erreur de validation du formulaire
-      }
-      
-      // Affichage des messages d'erreur appropriés
-      const errorMessage = error.response?.data?.message ||
-                         error.message ||
-                         'Une erreur est survenue lors de la sauvegarde de la classe';
-      
-      message.error(errorMessage);
-      
-      // Journalisation des erreurs serveur
-      if (error.response) {
-        console.error('Erreur serveur:', {
-          status: error.response.status,
-          data: error.response.data,
-          headers: error.response.headers
-        });
-      }
+      message.error(error.message || 'Erreur lors de la sauvegarde de la classe');
     }
   };
 

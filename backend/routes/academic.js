@@ -3,6 +3,7 @@ const router = express.Router();
 const Subject = require('../models/Subject');
 const Curriculum = require('../models/Curriculum');
 const { authenticateJWT } = require('../middlewares/auth');
+const levelController = require('../controllers/levelController');
 
 // Middleware pour gérer les erreurs
 const handleError = (res, error) => {
@@ -134,5 +135,11 @@ router.put('/curriculum/:id', authenticateJWT, (req, res) => {
     })
     .catch(error => handleError(res, error));
 });
+
+// Routes pour les niveaux
+router.get('/levels', authenticateJWT, levelController.getLevels);
+router.post('/levels', authenticateJWT, levelController.createLevel);
+router.put('/levels/:id', authenticateJWT, levelController.updateLevel);
+router.delete('/levels/:id', authenticateJWT, levelController.deleteLevel);
 
 module.exports = router;
